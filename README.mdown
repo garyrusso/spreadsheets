@@ -1,0 +1,496 @@
+# GLM Demo
+## Purpose
+This app is to show how to do the following:
+
+1. Extend the REST API
+1. Configure and test leading wildcard searches
+1. Best Approaches for Schema-agnostic data
+1. Multi-Statement ACID Transactions
+1. Best Approaches for storing and retrieving spreadsheet data.
+1. Bi-Temporal Data Structure and Query used for Point-In-Time Audits
+1. Triplestore Document Linking
+1. Triplestore Queries for Forward and Backward Chain Inferencing
+
+
+# RESTful APIs
+
+<table>
+    <tr>
+        <td colspan="4" style="font-size:x-large;color:green"><b>Request Mappings</b></td>
+    </tr>
+    <tr>
+        <td width="100" style="background-color:green;color:white"><b>Method</b></td>
+        <td width="180" style="background-color:green;color:white"><b>URL Template</b></td>
+        <td width="420" style="background-color:green;color:white"><b>Parameters</b></td>
+        <td width="720" style="background-color:green;color:white"><b>Description</b></td>
+    </tr>
+    <tr>
+        <td valign="top" colspan="4"><b>Search APIs</b></td>
+    </tr>
+    <tr>
+        <td valign="top">GET</td>
+        <td valign="top">/search</td>
+        <td valign="top">
+		<table>
+			<tr><td valign="top">rs:q</td><td>query string<hr/>leading and trailing wildcards<hr/>constraints:<ul><li>dname</li><li>row</li><li>col</li><li>cell</li></ul></td></tr>
+			<tr><td valign="top">rs:start</td><td>starting record</td></tr>
+			<tr><td valign="top">rs:pageLength</td><td>number of records to return</td></tr>
+		</table>
+		</td>
+        <td valign="top" style ="font-family:'Courier New'">Searches entire data hub.<hr/>Returns search results using custom snippets with highlighting.</td>
+    </tr>
+    <tr>
+        <td valign="top">GET</td>
+        <td valign="top">/spreadsheet/search</td>
+        <td valign="top">
+		<table>
+			<tr><td valign="top">rs:q</td><td>query string<hr/>leading and trailing wildcards<hr/>constraints:<ul><li>dname</li><li>row</li><li>col</li><li>cell</li><li>user</li></ul></td></tr>
+			<tr><td valign="top">rs:start</td><td>starting record</td></tr>
+			<tr><td valign="top">rs:pageLength</td><td>number of records to return</td></tr>
+		</table>
+		</td>
+        <td valign="top" style ="font-family:'Courier New'">Search across all spreadsheet data of all users.<hr/>Returns search results using custom snippets with highlighting.</td>
+    </tr>
+    <tr>
+        <td valign="top">GET</td>
+        <td valign="top">/spreadsheet/{user}/search</td>
+        <td valign="top">
+		<table>
+			<tr><td valign="top">rs:q</td><td>query string<hr/>leading and trailing wildcards<hr/>constraints:<ul><li>dname</li><li>row</li><li>col</li><li>cell</li></ul></td></tr>
+			<tr><td valign="top">rs:start</td><td>starting record</td></tr>
+			<tr><td valign="top">rs:pageLength</td><td>number of records to return</td></tr>
+		</table>
+		</td>
+        <td valign="top" style ="font-family:'Courier New'">Search across all spreadsheets of a specific user.<hr/>Returns search results using custom snippets with highlighting.<hr/></td>
+    </tr>
+    <tr>
+        <td valign="top">GET</td>
+        <td valign="top">/spreadsheet/{user}/{docid}/search</td>
+        <td valign="top">
+		<table>
+			<tr><td valign="top">rs:q</td><td>query string<hr/>leading and trailing wildcards<hr/>constraints:<ul><li>dname</li><li>row</li><li>col</li><li>cell</li></ul></td></tr>
+			<tr><td valign="top">rs:start</td><td>starting record</td></tr>
+			<tr><td valign="top">rs:pageLength</td><td>number of records to return</td></tr>
+		</table>
+		</td>
+        <td valign="top" style ="font-family:'Courier New'">Search within specific spreadsheet data.<hr/>Returns search results using custom snippets with highlighting.</td>
+    </tr>
+    <tr>
+        <td valign="top" colspan="4"><b>Spreadsheet Aggregate API</b></td>
+    </tr>
+    <tr>
+        <td valign="top">GET</td>
+        <td valign="top">/import</td>
+        <td valign="top">
+		<table>
+			<tr><td valign="top">rs:q</td><td>query string<hr/>Uses rich search grammar.<br/><br/>Examples:<br/><pre>dname:ThisYr OR dname:AMOUNT*4</pre><pre>dvalue:?77</pre></td></tr>
+			<tr><td valign="top">rs:txid</td><td>txid (optional)</td></tr>
+		</table>
+		</td>
+        <td valign="top" style ="font-family:'Courier New'">Search all spreadsheet data for items using query string.<hr/>Returns aggregate results that can be imported into an Excel spreadsheet.</td>
+    </tr>
+    <tr>
+        <td valign="top">GET</td>
+        <td valign="top">/aggregate</td>
+        <td valign="top">
+		<table>
+			<tr><td valign="top">rs:field</td><td>field name</td></tr>
+			<tr><td valign="top">rs:user</td><td>user (optional)</td></tr>
+			<tr><td valign="top">rs:txid</td><td>txid (optional)</td></tr>
+		</table>
+		</td>
+        <td valign="top" style ="font-family:'Courier New'">Search all spreadsheet data for items using the specifed "named field".<hr/>Returns values associated with the "named field". It also returns the sum and average of the values.<hr/>If no user parameter is specfied then the system will widen the search scope to search all spreadsheet data.</td>
+    </tr>
+    <tr>
+        <td valign="top">GET</td>
+        <td valign="top">/fields<hr/>/fields/{$user}<hr/>/fields/{$user}/{$uri}</td>
+        <td valign="top">
+		<table>
+			<tr><td valign="top">rs:uri</td><td>spreadsheet uri (optional)</td></tr>
+			<tr><td valign="top">rs:user</td><td>user (optional)</td></tr>
+			<tr><td valign="top">rs:txid</td><td>txid (optional)</td></tr>
+		</table>
+		</td>
+        <td valign="top" style ="font-family:'Courier New'">Returns the list of "named fields" being used within spreadsheets.<hr/>If no user or uri parameter is provided then search scope widens to search all spreadsheets for all users.<hr/>If no uri parameter is specfied then the search scope widens to search across multiple spreadsheets for the specific user.</td>
+    </tr>
+    <tr>
+        <td valign="top" colspan="4"><b>Spreadsheet Management APIs</b></td>
+    </tr>
+    <tr>
+        <td valign="top">GET</td>
+        <td valign="top">/spreadsheet/{uri}</td>
+        <td valign="top">
+			<table>
+				<tr><td valign="top"><b>uri</b></td><td>Is tail of the request URL.</td></tr>
+				<tr><td valign="top">rs:txid</td><td>transaction-id is optional.</td></tr>
+			</table>
+		</td>
+        <td valign="top" style ="font-family:'Courier New'">Get the Excel data and file associated with the specific URI.</td>
+    </tr>
+    <tr>
+        <td valign="top">GET</td>
+        <td valign="top">/spreadsheet/{uri}/file</td>
+        <td valign="top">
+			<table>
+				<tr><td valign="top"><b>uri</b></td><td>uri is embedded in request URL</td></tr>
+				<tr><td valign="top">rs:txid</td><td>transaction-id is optional.</td></tr>
+			</table>
+		</td>
+        <td valign="top" style ="font-family:'Courier New'">Get the Excel file associatated with the specific URI.</td>
+    </tr>
+    <tr>
+        <td valign="top">GET</td>
+        <td valign="top">/spreadsheet/{uri}/data</td>
+        <td valign="top">
+			<table>
+				<tr><td valign="top"><b>uri</b></td><td>uri is embedded in request URL</td></tr>
+				<tr><td valign="top">rs:txid</td><td>transaction-id is optional.</td></tr>
+			</table>
+		</td>
+        <td valign="top" style ="font-family:'Courier New'">Get the Excel data associatated with the specific URI.</td>
+    </tr>
+    <tr>
+        <td valign="top">PUT</td>
+        <td valign="top">/spreadsheet/{uri}</td>
+        <td valign="top">
+			<table>
+				<tr><td valign="top"><b>uri</b></td><td>Is tail of request URL</td></tr>
+				<tr><td valign="top">rs:txid</td><td>transaction-id is optional.</td></tr>
+				<tr><td valign="top">payload</td><td>format is tbd</td></tr>
+			</table>
+		</td>
+        <td valign="top" style ="font-family:'Courier New'">Updates data and file of a specfic spreadsheet.</td>
+    </tr>
+    <tr>
+        <td valign="top">PUT</td>
+        <td valign="top">/spreadsheet/{uri}/file</td>
+        <td valign="top">
+			<table>
+				<tr><td valign="top"><b>uri</b></td><td>Is tail of request URL</td></tr>
+				<tr><td valign="top">rs:txid</td><td>transaction-id is optional.</td></tr>
+				<tr><td valign="top">payload</td><td>format is tbd</td></tr>
+			</table>
+		</td>
+        <td valign="top" style ="font-family:'Courier New'">Updates file of a specfic spreadsheet.</td>
+    </tr>
+    <tr>
+        <td valign="top">PUT</td>
+        <td valign="top">/spreadsheet/{uri}/data</td>
+        <td valign="top">
+			<table>
+				<tr><td valign="top"><b>uri</b></td><td>Is tail of request URL</td></tr>
+				<tr><td valign="top">rs:txid</td><td>transaction-id is optional.</td></tr>
+				<tr><td valign="top">payload</td><td>format is tbd</td></tr>
+			</table>
+		</td>
+        <td valign="top" style ="font-family:'Courier New'">Updates data of a specfic spreadsheet.</td>
+    </tr>
+    <tr>
+        <td valign="top">POST</td>
+        <td valign="top">/spreadsheet</td>
+        <td valign="top">
+			<table>
+				<tr><td valign="top">rs:txid</td><td>transaction-id is optional.</td></tr>
+				<tr><td valign="top">payload</td><td>format is tbd</td></tr>
+			</table>
+		</td>
+        <td valign="top" style ="font-family:'Courier New'">Creates new spreadsheet set (file with data).<hr/>Data is stored separately for richer search capability.<hr/>The xlsx or xls file is also stored for version history/audit purposes.<hr/></td>
+    </tr>
+    <tr>
+        <td valign="top">DELETE</td>
+        <td valign="top">/spreadsheet/{uri}</td>
+        <td valign="top">
+			<table>
+				<tr><td valign="top"><b>uri</b></td><td>Is tail of request URL.</td></tr>
+				<tr><td valign="top">rs:txid</td><td>transaction-id is optional.</td></tr>
+			</table>
+		</td>
+        <td valign="top" style ="font-family:'Courier New'">Deletes spreadsheet file and data.</td>
+    </tr>
+    <tr>
+        <td valign="top">DELETE</td>
+        <td valign="top">/spreadsheet/{uri}/file</td>
+        <td valign="top">
+			<table>
+				<tr><td valign="top"><b>uri</b></td><td>Is tail of request URL.</td></tr>
+				<tr><td valign="top">rs:txid</td><td>transaction-id is optional.</td></tr>
+			</table>
+		</td>
+        <td valign="top" style ="font-family:'Courier New'">Deletes spreadsheet file.</td>
+    </tr>
+    <tr>
+        <td valign="top">DELETE</td>
+        <td valign="top">/spreadsheet/{uri}/data</td>
+        <td valign="top">
+			<table>
+				<tr><td valign="top"><b>uri</b></td><td>Is tail of request URL.</td></tr>
+				<tr><td valign="top">rs:txid</td><td>transaction-id is optional.</td></tr>
+			</table>
+		</td>
+        <td valign="top" style ="font-family:'Courier New'">Deletes spreadsheet data.</td>
+    </tr>
+    <tr>
+        <td valign="top" colspan="4"><b>Document APIs</b></td>
+    </tr>
+    <tr>
+        <td valign="top">GET</td>
+        <td valign="top">/document</td>
+        <td valign="top">
+			<table>
+				<tr><td valign="top">rs:uri</td><td>Is needed to retrieve specific document.</td></tr>
+				<tr><td valign="top">rs:txid</td><td>transaction-id is optional</td></tr>
+			</table>
+		</td>
+        <td valign="top" style ="font-family:'Courier New'">Returns document</td>
+    </tr>
+    <tr>
+        <td valign="top">PUT</td>
+        <td valign="top">/document</td>
+        <td valign="top">
+			<table>
+				<tr><td valign="top">rs:uri</td><td>Is needed to target specific document.</td></tr>
+				<tr><td valign="top">payload</td><td>Requires XML payload.<hr/>JSON payload to be added later.</td></tr>
+				<tr><td valign="top">rs:txid</td><td>transaction-id is optional</td></tr>
+			</table>
+		</td>
+        <td valign="top" style ="font-family:'Courier New'">Updates document using payload</td>
+    </tr>
+    <tr>
+        <td valign="top">POST</td>
+        <td valign="top">/document</td>
+        <td valign="top">
+			<table>
+				<tr><td valign="top">rs:txid</td><td>transaction-id is optional</td></tr>
+				<tr><td valign="top">payload</td><td>Requires XML payload.<hr/>JSON payload to be added later.</td></tr>
+			</table>
+		</td>
+        <td valign="top" style ="font-family:'Courier New'">Creates new document using XML payload and returns success or fail status.</td>
+    </tr>
+    <tr>
+        <td valign="top">DELETE</td>
+        <td valign="top">/document</td>
+        <td valign="top">
+			<table>
+				<tr><td valign="top">rs:uri</td><td>Is needed to target specific document.</td></tr>
+				<tr><td valign="top">rs:txid</td><td>transaction-id is optional</td></tr>
+			</table>
+		</td>
+        <td valign="top" style ="font-family:'Courier New'">Deletes document</td>
+    </tr>
+    <tr>
+        <td valign="top" colspan="4"><b>Transaction APIs</b></td>
+    </tr>
+    <tr>
+        <td valign="top">GET</td>
+        <td valign="top">/transactions</td>
+        <td valign="top">No uri parameter or payload.</td>
+        <td valign="top" style ="font-family:'Courier New'">Returns transaction status for all transactions in the system.</td>
+    </tr>
+    <tr>
+        <td valign="top">POST</td>
+        <td valign="top">/transactions</td>
+        <td valign="top">rs:txid (optional)<hr/>rs:result=(commit|rollback) (optional)</td>
+        <td style ="font-family:'Courier New'">If no rs:txid is given then a new transactional context is created with new txid.<hr/>If an rs:txid and rs:result is provided then transaction is either committed or rolled back.<hr/>It will also discard the transactional context so that the txid is not longer valid.<hr/></td>
+    </tr>
+    <tr>
+        <td valign="top" colspan="4"><b>Audit APIs</b></td>
+    </tr>
+    <tr>
+        <td valign="top">GET</td>
+        <td valign="top">/audit</td>
+        <td valign="top">tbd</td>
+        <td valign="top" style ="font-family:'Courier New'">tbd</td>
+    </tr>
+    <tr>
+        <td valign="top">PUT</td>
+        <td valign="top">/audit</td>
+        <td valign="top">tbd</td>
+        <td valign="top" style ="font-family:'Courier New'">tbd</td>
+    </tr>
+    <tr>
+        <td valign="top">POST</td>
+        <td valign="top">/audit</td>
+        <td valign="top">tbd</td>
+        <td valign="top" style ="font-family:'Courier New'">tbd</td>
+    </tr>
+    <tr>
+        <td valign="top">DELETE</td>
+        <td valign="top">/audit</td>
+        <td valign="top">tbd</td>
+        <td valign="top" style ="font-family:'Courier New'">tbd</td>
+    </tr>
+</table>
+
+
+## Deploy
+* $ ml local bootstrap
+* $ ml local modules
+* $ ml local deploy content
+
+Content deploy copies zip file to database. Need to run the following snippet in qconsole to inflate data.
+
+<pre>
+
+declare namespace zip="xdmp:zip";
+
+let $_ :=
+  for $x in xdmp:zip-manifest(fn:doc("/files.zip"))//zip:part/text()
+    let $doc :=
+      xdmp:zip-get(fn:doc("/files.zip"), $x,
+        <options xmlns="xdmp:zip-get">
+          <format>xml</format>
+        </options>
+      )
+  
+  let $uri := fn:replace($x, "test/", "/glm/")
+    return
+      xdmp:document-insert($uri, $doc)
+
+let $_ := xdmp:document-delete("/files.zip")
+
+return "done"
+
+</pre>
+
+
+# Roxy
+
+## Table of Contents
+ - [Overview](#overview)
+ - [Features](#features)
+ - [Getting Help](#getting-help)
+ - [Requirements](#requirement)
+ - [Quick Start](#quick-start)
+
+## Overview
+Roxy is a utility for configuring and deploying MarkLogic applications. Using
+Roxy you can define your app servers, databases, forests, groups, tasks, etc
+in local configuration files. Roxy can then remotely create, update, and remove
+those settings from the command line.
+
+## Features
+
+### Cross Platform
+Roxy runs on any platform that runs Ruby. We currently test on Mac, Linux, and Windows.
+
+### Multiple Environments
+Roxy supports multiple deployment environments. You can define your own or
+use the default environments: local, dev, and prod. Each environment can have
+different settings which are specified in properties files or xml config files.
+
+### Easily Create and Deploy REST Extensions
+Roxy provides scaffolding for creating REST extensions, transforms, etc. Once
+you have writtern your REST extension Roxy makes deploying to the server
+a breeze.
+
+### Capture Existing MarkLogic Settings
+Whether it's a legacy application or you just prefer to configure
+your application using the Admin UI, Roxy can capture existing MarkLogic settings
+so that you can use them in your application. This feature is great for backing up
+Legacy Servers. Once the configurations are in Roxy you can then deploy to
+other servers.
+
+### Backwards Compatible
+Roxy works with all supported versions of MarkLogic server out of the box.
+
+### Customization
+Roxy is written in Ruby. Simply by editing the app_specific.rb file you can
+enhance, override, or replace the default functionality.
+
+### Run as a Java Jar
+If you work in an environment where installing [Ruby](http://ruby-lang.org) is not an option you
+can [run Roxy as a self contained jar](https://github.com/marklogic/roxy/wiki/Run-Roxy-as-a-Jar) file which embeds [JRuby](http://jruby.org).
+
+## Getting Help
+To get help with Roxy,
+
+* Subscribe to the [Roxy mailing list](http://developer.marklogic.com/mailman/listinfo/roxy)
+* Read up on [the wiki](https://github.com/marklogic/roxy/wiki)
+* Check out the [Tutorials page](https://github.com/marklogic/roxy/wiki/Tutorials)
+* For Command line usage run:  
+  `$ ml -h`
+
+
+## Requirements
+* A supported version of [MarkLogic](https://github.com/marklogic/roxy/wiki/Supported-MarkLogic-versions)
+* [Ruby 1.9.3](http://www.ruby-lang.org/en/) or greater
+* [Java (jdk)](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
+  Only if you wish to run the [mlcp](http://developer.marklogic.com/products/mlcp), [XQSync](http://developer.marklogic.com/code/xqsync, XQSync), or [RecordLoader](http://developer.marklogic.com/code/recordloader) commands.
+* [Git](http://git-scm.com/downloads) - Required to create a new project using "ml new".
+
+## Quick Start
+This section describes the quickest way to get started using Roxy.
+
+### Assumptions
+* You already have one or more MarkLogic Servers running somewhere that you can access from your computer. If not, get it [here](http://developer.marklogic.com/products).*
+* You know the admin logon to your MarkLogic Server(s)
+
+### Get Roxy
+Use one of these three options to get started. 
+
+#### Using git
+You can download Roxy using git
+`$ git clone git://github.com/marklogic/roxy.git`
+
+#### Grab an zipped version
+If you prefer to grab the archive simply download the latest release from our [Releases Page](https://github.com/marklogic/roxy/releases)
+
+#### Install the Shell script or Batch File
+Roxy comes with a script that you can put in your path. This file will create new projects for you by
+by issuing the `$ ml new` command. Grab one of these files and put it in a folder in your PATH.
+*__Note:__ In order for `$ ml new` to work you need to have git installed.*
+
+##### Windows
+Download the [ml.bat](https://github.com/marklogic/roxy/raw/master/ml.bat) file
+
+##### Mac/Linux
+Download the [ml](https://github.com/marklogic/roxy/raw/master/ml) file
+
+### Configure your application
+1. Open a command prompt in the root folder of Roxy.
+2. Run ml init to create sample configuration files.  
+  *You must specify the --server-version option with a value of 4, 5, 6 or 7*.  
+  *You must specify the --app-type with a value or rest, hybrid, or mvc*.
+
+  `$ ml init app-name --server-version=7 --app-type=rest`
+3. Modify deploy/build.properties with your application's settings.
+
+```
+# Username to authenticate to ML
+user=your-ml-admin-username
+
+# password for ML authentication
+#
+# leave this blank to be prompted for your password
+#
+password=
+
+# the authentication type for the appserver (digest|basic|application-level)
+authentication-method=application-level
+
+# the default user to authenticate with. defaults to nobody
+default-user=${app-name}-user
+
+# Specify the server(s) you wish to deploy to here. This tutorial assumes you are using localhost.
+local-server=localhost
+#dev-server=
+#prod-server=
+```
+
+### Configure MarkLogic Server
+*This step is only needed when database configurations have changed or on a fresh install. In most cases you will not need to restart your server.*
+
+1. Open a command prompt in the root folder of Roxy.  
+  *If your server is not configured as local-server in build.properties then substitute your environment here __( local | dev | prod )__*
+2. `$ ml local bootstrap`
+3. Depending on what changed you may need to restart MarkLogic in order to proceed. If you see output telling you to restart...  
+  `$ ml local restart`
+
+### Deploying Code
+*This step describes how to deploy your Roxy application into your MarkLogic Server modules database. If you have elected to run your code locally out of the filesystem you do not need to do this.*
+
+1. Open a command prompt in the root folder of Roxy
+2. `$ ml local deploy modules`
+
+### Congratulations
+**Congratulations!** You have Roxy running on your server. Now you need to start customizing it.

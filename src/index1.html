@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+      <title>REST API Demo - POST Test</title>
+  </head>
+  <body>
+    <h2>POST Demo</h2>
+    <div class="result">
+    </div>
+    <script src="http://code.jquery.com/jquery-1.10.2.min.js"><!-- --></script>
+    <script>
+      $.ajax({
+        url: '/v1/resources/glmdemo',
+        type: 'post',
+        data: {
+          'rs:quest': 'I seek the holy grail',
+          'rs:favorite-color': 'green'
+        },
+        success: function (data) {
+          $(".result").html(data);
+        }
+      });
+    </script>
+  </body>
+</html>
