@@ -102,6 +102,16 @@ declare function local:getValue($row as xs:string, $col as xs:string, $sheetName
 
   let $retVal  := if ($ref eq "s") then $sharedStrings[xs:integer($value) + 1] else $value
 
+  let $log := xdmp:log("11-1 ----- getValue: $col:        "||$col)
+  let $log := xdmp:log("11-2 ----- getValue: $row:        "||$row)
+  let $log := xdmp:log("11-3 ----- getValue: $sheetName:  "||$sheetName)
+  let $log := xdmp:log("11-4 ----- getValue: $wkSheetKey: "||$wkSheetKey)
+  let $log := xdmp:log("11-4 ----- getValue: $wkSheetKey: "||$wkSheetKey)
+  
+  let $log := xdmp:log("11-5 ----- getValue: $ref:        "||$ref)
+  let $log := xdmp:log("11-6 ----- getValue: $value:      "||$value)
+  let $log := xdmp:log(" ")
+
   return $retVal
 };
 
@@ -524,35 +534,36 @@ declare function local:extractSpreadsheetData($user as xs:string, $zipFile as xs
   return $doc
 };
 
-let $userDir := "/tmp/users/garyrusso/"
-let $user    := fn:tokenize($userDir, "/")[fn:last()-1]
+let $excelFileName := "/tmp/users/garyrusso/ey original template.xlsx"
 
-let $zipFileList := local:loadDirectory($userDir)
+let $userNum      := 3
+let $padUserNum   := ingest:padNum($userNum)
+let $user         := "janedoe"||$padUserNum
+let $userFullName := "Jane Doe "||$padUserNum
+let $dir          := "/user/"||$user||"/"
 
-let $docs :=
-  for $zipFile in $zipFileList
-    let $doc     := local:extractSpreadsheetData($user, $zipFile)
-    let $dir     := "/user/"||$user||"/"
-    let $uri     := $dir||xdmp:hash64($doc)||".xml"
-    let $fileUri := local:generateFileUri($user, $zipFile)
-    let $binDoc  := xdmp:document-get($zipFile, $BIN-OPTIONS)
-      where fn:ends-with($zipFile, "ey original template.xlsx")
-      order by $zipFile
-        return
-        (
-          xdmp:elapsed-time(),
-          $uri, $fileUri,
-        (:
-          xdmp:binary-size($binDoc/binary())
-          $doc/tax:feed/tax:worksheets/tax:worksheet
-          $uri, $fileUri,
-          fn:count($doc/tax:feed/tax:definedNames/tax:definedName),
-          $doc
-          xdmp:document-insert($uri, $doc, xdmp:default-permissions(), ("spreadsheet")),
-          xdmp:document-insert($fileUri, $binDoc, xdmp:default-permissions(), ("binary"))
-        :)
-          xdmp:document-insert($uri, $doc, xdmp:default-permissions(), ("spreadsheet")),
-          xdmp:document-insert($fileUri, $binDoc, xdmp:default-permissions(), ("binary"))
-        )
+let $binFileUri := fn:replace(ingest:generateFileUri($user, $excelFileName, $userNum), " ", "-")
+
+let $excelFile    := xdmp:document-get($excelFileName, $BIN-OPTIONS)
+
+let $doc     := local:extractSpreadsheetData($user, $excelFile)
+let $dir     := "/user/"||$user||"/"
+let $uri     := $dir||xdmp:hash64($doc)||".xml"
+let $fileUri := local:generateFileUri($user, $zipFile)
+
+return
+(
+  xdmp:elapsed-time(),
+  $uri, $fileUri,
+  (:
+  xdmp:binary-size($binDoc/binary())
+  $doc/tax:feed/tax:worksheets/tax:worksheet
+  $uri, $fileUri,
+  fn:count($doc/tax:feed/tax:definedNames/tax:definedName),
+  $doc
+  xdmp:document-insert($uri, $doc, xdmp:default-permissions(), ("spreadsheet")),
+  xdmp:document-insert($fileUri, $binDoc, xdmp:default-permissions(), ("binary"))
+  :)
+)
 
 return $docs

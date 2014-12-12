@@ -8,7 +8,7 @@ declare option xdmp:mapping "false";
 
 <table border="0">
   <tr><td width="800" valign="top">&nbsp;</td></tr>
-  <tr><td valign="top" align="center">GLM Demo - Wildcard Search with schema-agnostic data.</td></tr>
+  <tr><td valign="top" align="center">Spreadsheet Demo - Wildcard Search with schema-agnostic data.</td></tr>
   <tr><td valign="top">&nbsp;</td></tr>
   <tr><td valign="top">&nbsp;</td></tr>
   <tr>
