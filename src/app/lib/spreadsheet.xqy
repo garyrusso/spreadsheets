@@ -76,7 +76,11 @@ declare function ssheet:generate-simple-xl-ooxml
     xdmp:zip-create($manifest, $parts)
 };
 
-declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as xs:string, $fileUri as xs:string)
+declare function ssheet:createSpreadsheetFile(
+  $user as xs:string,
+  $filingDate as xs:string,
+  $fileUri as xs:string,
+  $taxPlan as node())
 {
   let $contentTypes :=
     <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
@@ -1139,6 +1143,96 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
         <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
       </Relationships>
 
+  let $c4  := $taxPlan/grossIncome/actual/c4/text()
+  let $c5  := $taxPlan/grossIncome/actual/c5/text()
+  let $c6  := $taxPlan/grossIncome/actual/c6/text()
+  let $c7  := $taxPlan/grossIncome/actual/c7/text()
+  let $c8  := $taxPlan/grossIncome/actual/c8/text()
+  let $c9  := $taxPlan/grossIncome/actual/c9/text()
+  let $c10 := $taxPlan/grossIncome/actual/c10/text()
+  let $c11 := $taxPlan/grossIncome/actual/c11/text()
+
+  let $c14 := $taxPlan/adjGrossIncome/actual/c14/text()
+  let $c15 := $taxPlan/adjGrossIncome/actual/c15/text()
+  let $c16 := $taxPlan/adjGrossIncome/actual/c16/text()
+  let $c17 := $taxPlan/adjGrossIncome/actual/c17/text()
+  let $c18 := $taxPlan/adjGrossIncome/actual/c18/text()
+  let $c19 := $taxPlan/adjGrossIncome/actual/c19/text()
+
+  let $c22 := $taxPlan/allowableItemizedDeductions/actual/c22/text()
+  let $c23 := $taxPlan/allowableItemizedDeductions/actual/c23/text()
+  let $c24 := $taxPlan/allowableItemizedDeductions/actual/c24/text()
+  let $c25 := $taxPlan/allowableItemizedDeductions/actual/c25/text()
+  let $c26 := $taxPlan/allowableItemizedDeductions/actual/c26/text()
+  let $c27 := $taxPlan/allowableItemizedDeductions/actual/c27/text()
+  let $c28 := $taxPlan/allowableItemizedDeductions/actual/c28/text()
+  let $c29 := $taxPlan/allowableItemizedDeductions/actual/c29/text()
+  let $c30 := $taxPlan/allowableItemizedDeductions/actual/c30/text()
+  let $c31 := $taxPlan/allowableItemizedDeductions/actual/c31/text()
+  let $c33 := $taxPlan/allowableItemizedDeductions/actual/c33/text()
+  let $c34 := $taxPlan/allowableItemizedDeductions/actual/c34/text()
+
+  let $d4  := $taxPlan/grossIncome/estimated/yearEnd/d4/text()
+  let $d5  := $taxPlan/grossIncome/estimated/yearEnd/d5/text()
+  let $d6  := $taxPlan/grossIncome/estimated/yearEnd/d6/text()
+  let $d7  := $taxPlan/grossIncome/estimated/yearEnd/d7/text()
+  let $d8  := $taxPlan/grossIncome/estimated/yearEnd/d8/text()
+  let $d9  := $taxPlan/grossIncome/estimated/yearEnd/d9/text()
+  let $d10 := $taxPlan/grossIncome/estimated/yearEnd/d10/text()
+  let $d11 := $taxPlan/grossIncome/estimated/yearEnd/d11/text()
+
+  let $d14 := $taxPlan/adjGrossIncome/estimated/yearEnd/d14/text()
+  let $d15 := $taxPlan/adjGrossIncome/estimated/yearEnd/d15/text()
+  let $d16 := $taxPlan/adjGrossIncome/estimated/yearEnd/d16/text()
+  let $d17 := $taxPlan/adjGrossIncome/estimated/yearEnd/d17/text()
+  let $d18 := $taxPlan/adjGrossIncome/estimated/yearEnd/d18/text()
+  let $d19 := $taxPlan/adjGrossIncome/estimated/yearEnd/d19/text()
+
+  let $d22 := $taxPlan/allowableItemizedDeductions/estimated/yearEnd/d22/text()
+  let $d23 := $taxPlan/allowableItemizedDeductions/estimated/yearEnd/d23/text()
+  let $d24 := $taxPlan/allowableItemizedDeductions/estimated/yearEnd/d24/text()
+  let $d25 := $taxPlan/allowableItemizedDeductions/estimated/yearEnd/d25/text()
+  let $d26 := $taxPlan/allowableItemizedDeductions/estimated/yearEnd/d26/text()
+  let $d27 := $taxPlan/allowableItemizedDeductions/estimated/yearEnd/d27/text()
+  let $d28 := $taxPlan/allowableItemizedDeductions/estimated/yearEnd/d28/text()
+  let $d29 := $taxPlan/allowableItemizedDeductions/estimated/yearEnd/d29/text()
+  let $d30 := $taxPlan/allowableItemizedDeductions/estimated/yearEnd/d30/text()
+
+  let $e4  := $taxPlan/grossIncome/estimated/fullYear/e4/text()
+  let $e5  := $taxPlan/grossIncome/estimated/fullYear/e5/text()
+  let $e6  := $taxPlan/grossIncome/estimated/fullYear/e6/text()
+  let $e7  := $taxPlan/grossIncome/estimated/fullYear/e7/text()
+  let $e8  := $taxPlan/grossIncome/estimated/fullYear/e8/text()
+  let $e9  := $taxPlan/grossIncome/estimated/fullYear/e9/text()
+  let $e10 := $taxPlan/grossIncome/estimated/fullYear/e10/text()
+  let $e11 := $taxPlan/grossIncome/estimated/fullYear/e11/text()
+
+  let $e14 := $taxPlan/adjGrossIncome/estimated/fullYear/e14/text()
+  let $e15 := $taxPlan/adjGrossIncome/estimated/fullYear/e15/text()
+  let $e16 := $taxPlan/adjGrossIncome/estimated/fullYear/e16/text()
+  let $e17 := $taxPlan/adjGrossIncome/estimated/fullYear/e17/text()
+  let $e18 := $taxPlan/adjGrossIncome/estimated/fullYear/e18/text()
+  let $e19 := $taxPlan/adjGrossIncome/estimated/fullYear/e19/text()
+
+  let $e22 := $taxPlan/allowableItemizedDeductions/estimated/fullYear/e22/text()
+  let $e23 := $taxPlan/allowableItemizedDeductions/estimated/fullYear/e23/text()
+  let $e24 := $taxPlan/allowableItemizedDeductions/estimated/fullYear/e24/text()
+  let $e25 := $taxPlan/allowableItemizedDeductions/estimated/fullYear/e25/text()
+  let $e26 := $taxPlan/allowableItemizedDeductions/estimated/fullYear/e26/text()
+  let $e27 := $taxPlan/allowableItemizedDeductions/estimated/fullYear/e27/text()
+  let $e28 := $taxPlan/allowableItemizedDeductions/estimated/fullYear/e28/text()
+  let $e29 := $taxPlan/allowableItemizedDeductions/estimated/fullYear/e29/text()
+  let $e30 := $taxPlan/allowableItemizedDeductions/estimated/fullYear/e30/text()
+  let $e32 := $taxPlan/allowableItemizedDeductions/estimated/fullYear/e32/text()
+  let $e34 := $taxPlan/allowableItemizedDeductions/estimated/fullYear/e34/text()
+  let $e35 := $taxPlan/allowableItemizedDeductions/estimated/fullYear/e35/text()
+  let $e36 := $taxPlan/allowableItemizedDeductions/estimated/fullYear/e36/text()
+  let $e37 := $taxPlan/allowableItemizedDeductions/estimated/fullYear/e37/text()
+  let $e38 := $taxPlan/allowableItemizedDeductions/estimated/fullYear/e38/text()
+  let $e39 := $taxPlan/allowableItemizedDeductions/estimated/fullYear/e39/text()
+  
+  let $f30 := $taxPlan/allowableItemizedDeductions/estimated/itemizedDeductionPct/text()
+
   let $sheet1 :=
     <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
       xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
@@ -1211,14 +1305,14 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
             <v>7</v>
           </c>
           <c r="C4" s="22">
-            <v>{xdmp:random(100000)}</v>
+            <v>{$c4}</v>
           </c>
           <c r="D4" s="22">
-            <v>40000</v>
+            <v>{$d4}</v>
           </c>
           <c r="E4" s="10">
             <f t="shared" ref="E4:E10" si="0">IF(SUM(D4,C4),C4+D4,"")</f>
-            <v>{xdmp:random(100000)}</v>
+            <v>{$e4}</v>
           </c>
           <c r="F4" s="2"/>
         </row>
@@ -1228,14 +1322,14 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
             <v>8</v>
           </c>
           <c r="C5" s="24">
-            <v>{xdmp:random(10000)}</v>
+            <v>{$c5}</v>
           </c>
           <c r="D5" s="24">
-            <v>{xdmp:random(10000)}</v>
+            <v>{$d5}</v>
           </c>
           <c r="E5" s="11">
             <f t="shared" si="0"/>
-            <v>{xdmp:random(10000)}</v>
+            <v>{$e5}</v>
           </c>
           <c r="F5" s="2"/>
         </row>
@@ -1245,14 +1339,14 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
             <v>9</v>
           </c>
           <c r="C6" s="24">
-            <v>{xdmp:random(10000)}</v>
+            <v>{$c6}</v>
           </c>
           <c r="D6" s="24">
-            <v>{xdmp:random(10000)}</v>
+            <v>{$d6}</v>
           </c>
           <c r="E6" s="11">
             <f t="shared" si="0"/>
-            <v>{xdmp:random(10000)}</v>
+            <v>{$e6}</v>
           </c>
           <c r="F6" s="2"/>
         </row>
@@ -1262,14 +1356,14 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
             <v>10</v>
           </c>
           <c r="C7" s="24">
-            <v>{xdmp:random(10000)}</v>
+            <v>{$c7}</v>
           </c>
           <c r="D7" s="24">
-            <v>{xdmp:random(10000)}</v>
+            <v>{$d7}</v>
           </c>
           <c r="E7" s="11">
             <f t="shared" si="0"/>
-            <v>{xdmp:random(10000)}</v>
+            <v>{$e7}</v>
           </c>
           <c r="F7" s="2"/>
         </row>
@@ -1279,14 +1373,14 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
             <v>11</v>
           </c>
           <c r="C8" s="24">
-            <v>{xdmp:random(10000)}</v>
+            <v>{$c8}</v>
           </c>
           <c r="D8" s="24">
-            <v>{xdmp:random(10000)}</v>
+            <v>{$d8}</v>
           </c>
           <c r="E8" s="11">
             <f t="shared" si="0"/>
-            <v>{xdmp:random(10000)}</v>
+            <v>{$e8}</v>
           </c>
           <c r="F8" s="2"/>
         </row>
@@ -1296,14 +1390,14 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
             <v>12</v>
           </c>
           <c r="C9" s="24">
-            <v>{xdmp:random(10000)}</v>
+            <v>{$c9}</v>
           </c>
           <c r="D9" s="24">
-            <v>{xdmp:random(10000)}</v>
+            <v>{$d9}</v>
           </c>
           <c r="E9" s="11">
             <f t="shared" si="0"/>
-            <v>{xdmp:random(10000)}</v>
+            <v>{$e9}</v>
           </c>
           <c r="F9" s="2"/>
         </row>
@@ -1313,14 +1407,14 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
             <v>13</v>
           </c>
           <c r="C10" s="24">
-            <v>{xdmp:random(10000)}</v>
+            <v>{$c10}</v>
           </c>
           <c r="D10" s="24">
-            <v>{xdmp:random(10000)}</v>
+            <v>{$d10}</v>
           </c>
           <c r="E10" s="11">
             <f t="shared" si="0"/>
-            <v>{xdmp:random(10000)}</v>
+            <v>{$e10}</v>
           </c>
           <c r="F10" s="2"/>
         </row>
@@ -1331,15 +1425,15 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
           </c>
           <c r="C11" s="11">
             <f>IF(SUM(C4:C10),SUM(C4:C10),"")</f>
-            <v>{xdmp:random(100000)}</v>
+            <v>{$c11}</v>
           </c>
           <c r="D11" s="11">
             <f>IF(SUM(D4:D10),SUM(D4:D10),"")</f>
-            <v>{xdmp:random(100000)}</v>
+            <v>{$d11}</v>
           </c>
           <c r="E11" s="11">
             <f>IF(SUM(E4:E10),SUM(E4:E10),"")</f>
-            <v>{xdmp:random(100000)}</v>
+            <v>{$e11}</v>
           </c>
           <c r="F11" s="2"/>
         </row>
@@ -1377,14 +1471,14 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
             <v>14</v>
           </c>
           <c r="C14" s="22">
-            <v>{xdmp:random(1000)}</v>
+            <v>{$c14}</v>
           </c>
           <c r="D14" s="22">
-            <v>{xdmp:random(1000)}</v>
+            <v>{$d14}</v>
           </c>
           <c r="E14" s="10">
             <f>IF(AND(D14=0,C14=0),"",C14+D14)</f>
-            <v>{xdmp:random(1000)}</v>
+            <v>{$e14}</v>
           </c>
           <c r="F14" s="2"/>
         </row>
@@ -1394,14 +1488,14 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
             <v>15</v>
           </c>
           <c r="C15" s="24">
-            <v>{xdmp:random(1000)}</v>
+            <v>{$c15}</v>
           </c>
           <c r="D15" s="24">
-            <v>{xdmp:random(1000)}</v>
+            <v>{$d15}</v>
           </c>
           <c r="E15" s="11">
             <f>IF(SUM(D15,C15),C15+D15,"")</f>
-            <v>{xdmp:random(1000)}</v>
+            <v>{$e15}</v>
           </c>
           <c r="F15" s="2"/>
         </row>
@@ -1411,14 +1505,14 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
             <v>16</v>
           </c>
           <c r="C16" s="24">
-            <v>{xdmp:random(1000)}</v>
+            <v>{$c16}</v>
           </c>
           <c r="D16" s="24">
-            <v>{xdmp:random(1000)}</v>
+            <v>{$d16}</v>
           </c>
           <c r="E16" s="11">
             <f>IF(SUM(D16,C16),C16+D16,"")</f>
-            <v>{xdmp:random(1000)}</v>
+            <v>{$e16}</v>
           </c>
           <c r="F16" s="2"/>
         </row>
@@ -1428,14 +1522,14 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
             <v>17</v>
           </c>
           <c r="C17" s="24">
-            <v>{xdmp:random(1000)}</v>
+            <v>{$c17}</v>
           </c>
           <c r="D17" s="24">
-            <v>{xdmp:random(1000)}</v>
+            <v>{$d17}</v>
           </c>
           <c r="E17" s="11">
             <f>IF(SUM(D17,C17),C17+D17,"")</f>
-            <v>{xdmp:random(1000)}</v>
+            <v>{$e17}</v>
           </c>
           <c r="F17" s="2"/>
         </row>
@@ -1446,15 +1540,15 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
           </c>
           <c r="C18" s="11">
             <f>IF(SUM(C14:C17),SUM(C14:C17),"")</f>
-            <v>{xdmp:random(10000)}</v>
+            <v>{$c18}</v>
           </c>
           <c r="D18" s="11">
             <f>IF(SUM(D14:D17),SUM(D14:D17),"")</f>
-            <v>{xdmp:random(10000)}</v>
+            <v>{$d18}</v>
           </c>
           <c r="E18" s="11">
             <f>IF(SUM(E14:E17),SUM(E14:E17),"")</f>
-            <v>{xdmp:random(10000)}</v>
+            <v>{$e18}</v>
           </c>
           <c r="F18" s="2"/>
         </row>
@@ -1465,15 +1559,15 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
           </c>
           <c r="C19" s="14">
             <f>IF(AND(SUM(C18)=0,SUM(C11)=0),"",SUM(C11)-SUM(C18))</f>
-            <v>{xdmp:random(10000)}</v>
+            <v>{$c19}</v>
           </c>
           <c r="D19" s="11">
             <f>IF(AND(SUM(D18)=0,SUM(D11)=0),"",SUM(D11)-SUM(D18))</f>
-            <v>{xdmp:random(10000)}</v>
+            <v>{$d19}</v>
           </c>
           <c r="E19" s="11">
             <f>IF(AND(SUM(E18)=0,SUM(E11)=0),"",SUM(E11)-SUM(E18))</f>
-            <v>{xdmp:random(10000)}</v>
+            <v>{$e19}</v>
           </c>
           <c r="F19" s="2"/>
         </row>
@@ -1511,14 +1605,14 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
             <v>5</v>
           </c>
           <c r="C22" s="22">
-            <v>{xdmp:random(1000)}</v>
+            <v>{$c22}</v>
           </c>
           <c r="D22" s="22">
-            <v>{xdmp:random(1000)}</v>
+            <v>{$d22}</v>
           </c>
           <c r="E22" s="10">
             <f t="shared" ref="E22:E29" si="1">IF(SUM(D22,C22),C22+D22,"")</f>
-            <v>{xdmp:random(10000)}</v>
+            <v>{$e22}</v>
           </c>
           <c r="F22" s="2"/>
         </row>
@@ -1528,14 +1622,14 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
             <v>6</v>
           </c>
           <c r="C23" s="24">
-            <v>{xdmp:random(1000)}</v>
+            <v>{$c23}</v>
           </c>
           <c r="D23" s="24">
-            <v>{xdmp:random(10000)}</v>
+            <v>{$d23}</v>
           </c>
           <c r="E23" s="11">
             <f t="shared" si="1"/>
-            <v>{xdmp:random(10000)}</v>
+            <v>{$e23}</v>
           </c>
           <c r="F23" s="2"/>
         </row>
@@ -1545,14 +1639,14 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
             <v>18</v>
           </c>
           <c r="C24" s="24">
-            <v>{xdmp:random(10000)}</v>
+            <v>{$c24}</v>
           </c>
           <c r="D24" s="24">
-            <v>{xdmp:random(1000)}</v>
+            <v>{$d24}</v>
           </c>
           <c r="E24" s="11">
             <f t="shared" si="1"/>
-            <v>{xdmp:random(10000)}</v>
+            <v>{$e24}</v>
           </c>
           <c r="F24" s="2"/>
         </row>
@@ -1562,14 +1656,14 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
             <v>19</v>
           </c>
           <c r="C25" s="24">
-            <v>{xdmp:random(1000)}</v>
+            <v>{$c25}</v>
           </c>
           <c r="D25" s="24">
-            <v>{xdmp:random(1000)}</v>
+            <v>{$d25}</v>
           </c>
           <c r="E25" s="11">
             <f t="shared" si="1"/>
-            <v>{xdmp:random(1000)}</v>
+            <v>{$e25}</v>
           </c>
           <c r="F25" s="2"/>
         </row>
@@ -1579,14 +1673,14 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
             <v>20</v>
           </c>
           <c r="C26" s="24">
-            <v>{xdmp:random(10000)}</v>
+            <v>{$c26}</v>
           </c>
           <c r="D26" s="24">
-            <v>{xdmp:random(1000)}</v>
+            <v>{$d26}</v>
           </c>
           <c r="E26" s="11">
             <f t="shared" si="1"/>
-            <v>{xdmp:random(10000)}</v>
+            <v>{$e26}</v>
           </c>
           <c r="F26" s="2"/>
         </row>
@@ -1596,14 +1690,14 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
             <v>21</v>
           </c>
           <c r="C27" s="24">
-            <v>{xdmp:random(10000)}</v>
+            <v>{$c27}</v>
           </c>
           <c r="D27" s="24">
-            <v>{xdmp:random(1000)}</v>
+            <v>{$d27}</v>
           </c>
           <c r="E27" s="11">
             <f t="shared" si="1"/>
-            <v>{xdmp:random(10000)}</v>
+            <v>{$e27}</v>
           </c>
           <c r="F27" s="2"/>
         </row>
@@ -1613,14 +1707,14 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
             <v>22</v>
           </c>
           <c r="C28" s="25">
-            <v>{xdmp:random(10000)}</v>
+            <v>{$c28}</v>
           </c>
           <c r="D28" s="24">
-            <v>{xdmp:random(10000)}</v>
+            <v>{$d28}</v>
           </c>
           <c r="E28" s="11">
             <f t="shared" si="1"/>
-            <v>{xdmp:random(10000)}</v>
+            <v>{$e28}</v>
           </c>
           <c r="F28" s="2"/>
         </row>
@@ -1630,14 +1724,14 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
             <v>23</v>
           </c>
           <c r="C29" s="24">
-            <v>{xdmp:random(10000)}</v>
+            <v>{$c29}</v>
           </c>
           <c r="D29" s="24">
-            <v>{xdmp:random(10000)}</v>
+            <v>{$d29}</v>
           </c>
           <c r="E29" s="11">
             <f t="shared" si="1"/>
-            <v>{xdmp:random(10000)}</v>
+            <v>{$e29}</v>
           </c>
           <c r="F29" s="2"/>
         </row>
@@ -1648,15 +1742,15 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
           </c>
           <c r="C30" s="11">
             <f>IF(SUM(C22:C29)=0,"",SUM(C22:C29))</f>
-            <v>{xdmp:random(100000)}</v>
+            <v>{$c30}</v>
           </c>
           <c r="D30" s="11">
             <f>IF(SUM(D22:D29)=0,"",SUM(D22:D29))</f>
-            <v>{xdmp:random(100000)}</v>
+            <v>{$d30}</v>
           </c>
           <c r="E30" s="11">
             <f>IF(SUM(E22:E29)=0,"",SUM(E22:E29))</f>
-            <v>{xdmp:random(100000)}</v>
+            <v>{$e30}</v>
           </c>
           <c r="F30" s="2"/>
         </row>
@@ -1666,7 +1760,7 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
             <v>24</v>
           </c>
           <c r="C31" s="27">
-            <v>{xdmp:random(100000)}</v>
+            <v>{$c31}</v>
           </c>
           <c r="D31" s="15"/>
           <c r="E31" s="16"/>
@@ -1681,7 +1775,7 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
           <c r="D32" s="16"/>
           <c r="E32" s="17">
             <f>IF(OR(SUM(E30)&gt;0,C31),MAX(E30,C31),"")</f>
-            <v>{xdmp:random(100000)}</v>
+            <v>{$e32}</v>
           </c>
           <c r="F32" s="2"/>
         </row>
@@ -1691,7 +1785,7 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
             <v>26</v>
           </c>
           <c r="C33" s="30">
-            <v>{xdmp:random(10000)}</v>
+            <v>{$c33}</v>
           </c>
           <c r="D33" s="18"/>
           <c r="E33" s="15"/>
@@ -1708,7 +1802,7 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
           <c r="D34" s="18"/>
           <c r="E34" s="19">
             <f>IF(AND(C34&gt;0,C33),C34*C33,"")</f>
-            <v>{xdmp:random(10000)}</v>
+            <v>{$e34}</v>
           </c>
           <c r="F34" s="2"/>
         </row>
@@ -1721,7 +1815,7 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
           <c r="D35" s="18"/>
           <c r="E35" s="17">
             <f>IF(OR(SUM(E32)&gt;0,C33),E32+C33*C34,"")</f>
-            <v>{xdmp:random(100000)}</v>
+            <v>{$e35}</v>
           </c>
           <c r="F35" s="2"/>
         </row>
@@ -1734,7 +1828,7 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
           <c r="D36" s="18"/>
           <c r="E36" s="17">
             <f>IF(OR(SUM(E19)&gt;0,SUM(E35)),SUM(E19)-SUM(E35),"")</f>
-            <v>{xdmp:random(100000)}</v>
+            <v>{$e36}</v>
           </c>
           <c r="F36" s="2"/>
         </row>
@@ -1746,7 +1840,7 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
           <c r="C37" s="16"/>
           <c r="D37" s="16"/>
           <c r="E37" s="32">
-            <v>0.35</v>
+            <v>{$e37}</v>
           </c>
           <c r="F37" s="2"/>
         </row>
@@ -1758,7 +1852,7 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
           <c r="C38" s="16"/>
           <c r="D38" s="16"/>
           <c r="E38" s="30">
-            <v>{xdmp:random(100000)}</v>
+            <v>{$e38}</v>
           </c>
           <c r="F38" s="2"/>
         </row>
@@ -1770,7 +1864,7 @@ declare function ssheet:createSpreadsheetFile($user as xs:string, $filingDate as
           <c r="C39" s="16"/>
           <c r="D39" s="16"/>
           <c r="E39" s="32">
-            <v>0.32</v>
+            <v>{$e39}</v>
           </c>
           <c r="F39" s="2"/>
         </row>

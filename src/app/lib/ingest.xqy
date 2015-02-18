@@ -16,9 +16,8 @@ declare namespace tax  = "http://tax.thomsonreuters.com";
 
 declare namespace zip     = "xdmp:zip";
 declare namespace ssml    = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
-declare namespace mc      = "http://schemas.openxmlformats.org/markup-compatibility/2006";
 declare namespace rel     = "http://schemas.openxmlformats.org/package/2006/relationships";
-declare namespace r       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+declare namespace wbrel   = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
 declare namespace wsheet  = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet";
 declare namespace core    = "http://schemas.openxmlformats.org/package/2006/metadata/core-properties";
 declare namespace dcterms = "http://purl.org/dc/terms/";
@@ -92,6 +91,309 @@ declare function ingest:getIsoDate($days as xs:string)
     xs:date($year||"-"||$month||"-"||$padDay)
 };
 
+declare function ingest:getTargetTaxBracket($bracket as xs:decimal) as xs:decimal
+{
+  let $rate :=
+      if ($bracket eq 0.10) then
+        0.10
+      else
+      if ($bracket eq 0.15) then
+        0.10
+      else
+      if ($bracket eq 0.25) then
+        0.15
+      else
+      if ($bracket eq 0.28) then
+        0.25
+      else
+      if ($bracket eq 0.33) then
+        0.28
+      else
+      if ($bracket eq 0.35) then
+        0.33
+      else
+      if ($bracket eq 0.396) then
+        0.35
+      else
+        0.396
+        
+  return $rate
+};
+
+declare function ingest:getTaxBracket($income as xs:decimal) as xs:decimal
+{
+(:
+10 - 9075
+15 - 9076 to 36900
+25 - 36901 to 89350
+28 - 89351 to 186350
+33 - 186351 to 405100
+35 - 405101 to 457600
+39.6 - 457600
+:)
+
+  let $rate :=
+      if ($income lt 9075) then
+        0.10
+      else
+      if ($income ge 9076 and $income lt 36901) then
+        0.15
+      else
+      if ($income ge 36901 and $income lt 89351) then
+        0.25
+      else
+      if ($income ge 89351 and $income lt 186351) then
+        0.28
+      else
+      if ($income ge 186351 and $income lt 405101) then
+        0.33
+      else
+      if ($income ge 405101 and $income lt 406751) then
+        0.35
+      else
+      if ($income ge 406751) then
+        0.396
+      else
+        0.396
+        
+  return $rate
+};
+
+declare function ingest:buildTaxPlanDoc()
+{
+  let $c4  := xdmp:random(100000)
+  let $c5  := xdmp:random(100000)
+  let $c6  := xdmp:random(100000)
+  let $c7  := xdmp:random(100000)
+  let $c8  := xdmp:random(100000)
+  let $c9  := xdmp:random(10000)
+  let $c10 := xdmp:random(10000)
+  
+  let $c11 := $c4 + $c5 + $c6 + $c7 + $c8 + $c9 + $c10 
+
+  let $d4 := xs:integer($c4 div 12)
+  let $d5 := xs:integer($c5 div 12)
+  let $d6 := xs:integer($c6 div 12)
+  let $d7 := xs:integer($c7 div 12)
+  let $d8 := xs:integer($c8 div 12)
+  let $d9 := xs:integer($c9 div 12)
+  let $d10 := xs:integer($c10 div 12)
+  
+  let $d11 := $d4 + $d5 + $d6 + $d7 + $d8 + $d9 + $d10 
+
+  let $e4 := $c4 + $d4
+  let $e5 := $c5 + $d5
+  let $e6 := $c6 + $d6
+  let $e7 := $c7 + $d7
+  let $e8 := $c8 + $d8
+  let $e9 := $c9 + $d9
+  let $e10 := $c10 + $d10
+  
+  let $e11 := $e4 + $e5 + $e6 + $e7 + $e8 + $e9 + $e10 
+
+  let $c14 := xdmp:random(1000)
+  let $c15 := xdmp:random(1000)
+  let $c16 := xdmp:random(1000)
+  let $c17 := xdmp:random(1000)
+
+  let $c18 := $c14 + $c15 + $c16 + $c17
+  let $c19 := $c11 - $c18
+
+  let $d14 := xs:integer($c14 div 12)
+  let $d15 := xs:integer($c15 div 12)
+  let $d16 := xs:integer($c16 div 12)
+  let $d17 := xs:integer($c17 div 12)
+  
+  let $d18 := $d14 + $d15 + $d16 + $d17
+  let $d19 := $d11 - $d18
+
+  let $e14 := $c14 + $d14
+  let $e15 := $c15 + $d15
+  let $e16 := $c16 + $d16
+  let $e17 := $c17 + $d17
+
+  let $e18 := $e14 + $e15 + $e16 + $e17
+  let $e19 := $e11 - $e18
+
+  let $c22 := xdmp:random(1000)
+  let $c23 := xdmp:random(1000)
+  let $c24 := xdmp:random(10000)
+  let $c25 := xdmp:random(1000)
+  let $c26 := xdmp:random(1000)
+  let $c27 := xdmp:random(1000)
+  let $c28 := xdmp:random(1000)
+  let $c29 := xdmp:random(1000)
+
+  let $c30 := $c22 + $c23 + $c24 + $c25 + $c26 + $c27 + $c28 + $c29
+
+  let $d22 := xs:integer($c22 div 12)
+  let $d23 := xs:integer($c23 div 12)
+  let $d24 := xs:integer($c24 div 12)
+  let $d25 := xs:integer($c25 div 12)
+  let $d26 := xs:integer($c26 div 12)
+  let $d27 := xs:integer($c27 div 12)
+  let $d28 := xs:integer($c28 div 12)
+  let $d29 := xs:integer($c29 div 12)
+
+  let $d30 := $d22 + $d23 + $d24 + $d25 + $d26 + $d27 + $d28 + $d29
+
+  let $e22 := $c22 + $d22
+  let $e23 := $c23 + $d23
+  let $e24 := $c24 + $d24
+  let $e25 := $c25 + $d25
+  let $e26 := $c26 + $d26
+  let $e27 := $c27 + $d27
+  let $e28 := $c28 + $d28
+  let $e29 := $c29 + $d29
+
+  let $e30 := $e22 + $e23 + $e24 + $e25 + $e26 + $e27 + $e28 + $e29
+
+  let $c31 := xdmp:random(100000)
+  let $valueOfExemptions := xdmp:random(10000)
+  let $numAllowableExemptions := 5
+
+  let $e32 := fn:max(($e30, $c31))
+  let $e34 := $valueOfExemptions * $numAllowableExemptions
+  let $e35 := $e34 + $e32
+  let $e36 := fn:abs($e19 - $e35)
+
+  let $calcTaxBracket := ingest:getTaxBracket($e36)
+  
+  let $itemizedDeductionPct := xs:integer(xs:float($e30 div $e19) * 100)
+
+  let $doc :=
+    element { "taxPlan" }
+    {
+      element { "grossIncome" }
+      {
+        element { "actual" }
+        {
+          element { "c4" }  { $c4 },
+          element { "c5" }  { $c5 },
+          element { "c6" }  { $c6 },
+          element { "c7" }  { $c7 },
+          element { "c8" }  { $c8 },
+          element { "c9" }  { $c9 },
+          element { "c10" }  { $c10 },
+          element { "c11" }  { $c11 }
+        },
+        element { "estimated" }
+        {
+          element { "yearEnd" }
+          {
+            element { "d4" }  { $d4 },
+            element { "d5" }  { $d5 },
+            element { "d6" }  { $d6 },
+            element { "d7" }  { $d7 },
+            element { "d8" }  { $d8 },
+            element { "d9" }  { $d9 },
+            element { "d10" }  { $d10 },
+            element { "d11" }  { $d11 }
+          },
+          element { "fullYear" }
+          {
+            element { "e4" }  { $e4 },
+            element { "e5" }  { $e5 },
+            element { "e6" }  { $e6 },
+            element { "e7" }  { $e7 },
+            element { "e8" }  { $e8 },
+            element { "e9" }  { $e9 },
+            element { "e10" }  { $e10 },
+            element { "e11" }  { $e11 }
+          }
+        }
+      },
+      element { "adjGrossIncome" }
+      {
+        element { "actual" }
+        {
+          element { "c14" }  { $c14 },
+          element { "c15" }  { $c15 },
+          element { "c16" }  { $c16 },
+          element { "c17" }  { $c17 },
+          element { "c18" }  { $c18 },
+          element { "c19" }  { $c19 }
+        },
+        element { "estimated" }
+        {
+          element { "yearEnd" }
+          {
+            element { "d14" }  { $d14 },
+            element { "d15" }  { $d15 },
+            element { "d16" }  { $d16 },
+            element { "d17" }  { $d17 },
+            element { "d18" }  { $d18 },
+            element { "d19" }  { $d19 }
+          },
+          element { "fullYear" }
+          {
+            element { "e14" }  { $e14 },
+            element { "e15" }  { $e15 },
+            element { "e16" }  { $e16 },
+            element { "e17" }  { $e17 },
+            element { "e18" }  { $e18 },
+            element { "e19" }  { $e19 }
+          }
+        }
+      },
+      element { "allowableItemizedDeductions" }
+      {
+        element { "actual" }
+        {
+          element { "c22" }  { $c22 },
+          element { "c23" }  { $c23 },
+          element { "c24" }  { $c24 },
+          element { "c25" }  { $c25 },
+          element { "c26" }  { $c26 },
+          element { "c27" }  { $c27 },
+          element { "c28" }  { $c28 },
+          element { "c29" }  { $c29 },
+          element { "c30" }  { $c30 },
+          element { "c31" }  { $c31 },
+          element { "c33" }  { $valueOfExemptions },
+          element { "c34" }  { $numAllowableExemptions }
+        },
+        element { "estimated" }
+        {
+          element { "yearEnd" }
+          {
+            element { "d22" }  { $d22 },
+            element { "d23" }  { $d23 },
+            element { "d24" }  { $d24 },
+            element { "d25" }  { $d25 },
+            element { "d26" }  { $d26 },
+            element { "d27" }  { $d27 },
+            element { "d28" }  { $d28 },
+            element { "d29" }  { $d29 },
+            element { "d30" }  { $d30 }
+          },
+          element { "fullYear" }
+          {
+            element { "e22" }  { $e22 },
+            element { "e23" }  { $e23 },
+            element { "e24" }  { $e24 },
+            element { "e25" }  { $e25 },
+            element { "e26" }  { $e26 },
+            element { "e27" }  { $e27 },
+            element { "e28" }  { $e28 },
+            element { "e29" }  { $e29 },
+            element { "e30" }  { $e30 },
+            element { "e32" }  { $e32 },
+            element { "e34" }  { $e34 },
+            element { "e35" }  { $e35 },
+            element { "e36" }  { $e36 },
+            element { "e37" }  { $calcTaxBracket },
+            element { "e38" }  { xs:integer($e36 * .85) },
+            element { "e39" }  { ingest:getTargetTaxBracket($calcTaxBracket) }
+          },
+          element { "itemizedDeductionPct" } { $itemizedDeductionPct }
+        }
+      }
+    }
+
+   return $doc
+};
+
 declare function ingest:getFilingDate()
 {
   let $dates :=
@@ -162,20 +464,13 @@ declare function ingest:getFilingDate()
  : @param $cell
  : @param $doc
  :)
-declare function ingest:getValue($col as xs:string, $row as xs:string, $sheetName as xs:string, $table as map:map)
+declare function ingest:getValue($row as xs:string, $col as xs:string, $sheetName as xs:string, $table as map:map)
 {
-(:
-  let $col := "C"
-  let $row := "29"
-  let $sheetName  := "Named Ranges"
-  let $wkSheetKey1 := "xl/worksheets/sheet4.xml"
-:)
-
   let $wkBook        := map:get($table, "xl/workbook.xml")/ssml:workbook/ssml:sheets/ssml:sheet
   let $rels          := map:get($table, "xl/_rels/workbook.xml.rels")/rel:Relationships
   let $sharedStrings := map:get($table, "xl/sharedStrings.xml")/ssml:sst/ssml:si/ssml:t/text()
 
-  let $wkSheetKey := "xl/"||xs:string($rels/rel:Relationship[@Id=$wkBook[@name=$sheetName]/@r:id]/@Target)
+  let $wkSheetKey := "xl/"||xs:string($rels/rel:Relationship[@Id=$wkBook[@name=$sheetName]/@wbrel:id]/@Target)
 
   let $wkSheet := map:get($table, $wkSheetKey)
   let $item     := $wkSheet/ssml:worksheet/ssml:sheetData/ssml:row[@r=$row]/ssml:c[@r=$col||$row]
@@ -185,14 +480,6 @@ declare function ingest:getValue($col as xs:string, $row as xs:string, $sheetNam
 
   let $retVal  := if ($ref eq "s") then $sharedStrings[xs:integer($value) + 1] else $value
 
-  let $log := xdmp:log("11-1 ----- getValue: $col:        "||$col)
-  let $log := xdmp:log("11-2 ----- getValue: $row:        "||$row)
-  let $log := xdmp:log("11-3 ----- getValue: $sheetName:  "||$sheetName)
-  let $log := xdmp:log("11-4 ----- getValue: $wkSheetKey: "||$wkSheetKey)
-  let $log := xdmp:log("11-5 ----- getValue: $ref:        "||$ref)
-  let $log := xdmp:log("11-6 ----- getValue: $value:      "||$value)
-  let $log := xdmp:log(" ")
-
   return $retVal
 };
 
@@ -201,7 +488,7 @@ declare function ingest:getValue($col as xs:string, $row as xs:string, $sheetNam
  :
  : @param $row
  :)
-declare function ingest:findRowLabel($col as xs:string, $row as xs:string, $sheetName as xs:string, $table as map:map) as xs:string*
+declare function ingest:findRowLabel($row as xs:string, $col as xs:string, $sheetName as xs:string, $table as map:map) as xs:string*
 {
   let $leftLabelVal := ingest:getRowLabelValue($row, $col, $sheetName, $table)
 
@@ -215,9 +502,9 @@ declare function ingest:getRowLabelValue($row as xs:string, $col as xs:string, $
   let $leftCell := ingest:getLeftCell($col)
 
   return
-    if (fn:matches(ingest:getValue($leftCell, $row, $sheetName, $table), $pattern) or
+    if (fn:matches(ingest:getValue($row, $leftCell, $sheetName, $table), $pattern) or
         (fn:string-to-codepoints($leftCell) lt 66)) then
-      ingest:getValue($leftCell, $row, $sheetName, $table)
+      ingest:getValue($row, $leftCell, $sheetName, $table)
     else
       ingest:getRowLabelValue($row, $leftCell, $sheetName, $table)
 };
@@ -242,7 +529,7 @@ declare function ingest:getLeftCell($col as xs:string)
  :
  : @param $col
  :)
-declare function ingest:findColumnLabel($col as xs:string, $row as xs:string, $sheetName as xs:string, $table as map:map) (: as xs:string* :)
+declare function ingest:findColumnLabel($row as xs:string, $col as xs:string, $sheetName as xs:string, $table as map:map) (: as xs:string* :)
 {
   let $leftLabelVal :=
     if (fn:string-length($row) = 0) then ""
@@ -263,7 +550,7 @@ declare function ingest:getColumnLabelValue($row as xs:integer, $col as xs:strin
 
   let $labels :=
     for $row in $rows
-      let $label := ingest:getValue($col, xs:string($row), $sheetName, $table)
+      let $label := ingest:getValue(xs:string($row), $col, $sheetName, $table)
         where fn:matches($label, $pattern)
           return
             $label
@@ -299,7 +586,7 @@ declare function ingest:padNum($n as xs:integer)
  :
  : @param $cell
  :)
-declare function ingest:generateFileUri($user as xs:string, $fileName as xs:string, $n as xs:integer)
+declare function ingest:generateFileUriOrig($user as xs:string, $fileName as xs:string, $n as xs:integer)
 {
   let $newFileName := fn:tokenize(fn:replace($fileName, "workpaper1", "workpaper"), "\.")[1]||ingest:padNum($n)||".xlsx"
   
@@ -309,37 +596,62 @@ declare function ingest:generateFileUri($user as xs:string, $fileName as xs:stri
 };
 
 (:~
+ : Generate File URI
+ :
+ : @param $cell
+ :)
+declare function ingest:generateTemplateFileUri($fileName as xs:string)
+{
+  let $newFileName     := fn:tokenize($fileName, "/")[fn:last()]
+  let $templateDirName := "/template/"||fn:tokenize($newFileName, "\.")[1]
+  
+  return $templateDirName
+};
+
+(:~
+ : Generate File URI
+ :
+ : @param $cell
+ :)
+declare function ingest:generateFileUri($user as xs:string, $fileName as xs:string, $n as xs:integer)
+{
+  let $newFileName := fn:tokenize(fn:replace($fileName, "workpaper1", "workpaper"), "\.")[1]||".xlsx"
+  
+  let $fileUri := "/user/"||$user||"/files/"||fn:tokenize($newFileName, "/")[fn:last()]
+  
+  return $fileUri
+};
+
+(:~
  : Expansion Element
  :
- : @param $dname, $sheetName, $row, $col, and ooxml-map-table
+ : @param $dn, $row, $col
  :)
-declare function ingest:expansionElement($dname as xs:string, $sheetName as xs:string, $col as xs:string, $row as xs:string, $table as map:map)
+declare function ingest:expansionElement($dn as node(), $row as xs:string, $col as xs:string, $table as map:map)
 {
   let $newPos      := $col||$row
-  let $rowLabel    := ingest:findRowLabel($col, $row, $sheetName, $table)
-  let $columnLabel := ingest:findColumnLabel($col, $row, $sheetName, $table)
-  let $newValue    := ingest:getValue($col, $row, $sheetName, $table)
-
-  let $log := xdmp:log("10-1 ----- expansionElement: $newPos:      "||$newPos)
-  let $log := xdmp:log("10-2 ----- expansionElement: $rowLabel:    "||$rowLabel)
-  let $log := xdmp:log("10-3 ----- expansionElement: $columnLabel: "||$columnLabel)
-  let $log := xdmp:log("10-4 ----- expansionElement: $newValue:    "||$newValue)
-  let $log := xdmp:log(" ")
-
+  let $sheetName   := $dn/tax:sheet/text()
+  let $dname       := $dn/tax:dname/text()
+  let $rowLabel    := ingest:findRowLabel($row, $col, $sheetName, $table)
+  let $columnLabel := ingest:findColumnLabel($row, $col, $sheetName, $table)
+  let $newValue    := ingest:getValue($row, $col, $sheetName, $table)
+  
+  let $rowLabel    := ingest:findRowLabel(xs:string($row), $col, $sheetName, $table)
+  let $columnLabel := ingest:findColumnLabel(xs:string($row), $col, $sheetName, $table)
+  let $newValue    := ingest:getValue(xs:string($row), $col, $sheetName, $table)
+  
   let $doc :=
-    if (fn:empty($newValue)) then ()
-    else
-      element { fn:QName($NS, "definedName") }
-      {
-        element { fn:QName($NS, "dname") }       { $dname },
-        element { fn:QName($NS, "rowLabel") }    { if (fn:empty($rowLabel)) then "none" else $rowLabel },
-        element { fn:QName($NS, "columnLabel") } { if (fn:empty($columnLabel)) then "none" else $columnLabel },
-        element { fn:QName($NS, "sheet") }       { $sheetName },
-        element { fn:QName($NS, "col") }         { $col },
-        element { fn:QName($NS, "row") }         { $row },
-        element { fn:QName($NS, "pos") }         { $newPos },
-        element { fn:QName($NS, "dvalue") }      { $newValue }
-      }
+    element { fn:QName($NS, "definedName") }
+    {
+      element { fn:QName($NS, "dname") }       { $dname },
+      element { fn:QName($NS, "rowLabel") }    { if (fn:empty($rowLabel)) then "" else $rowLabel },
+      element { fn:QName($NS, "columnLabel") } { if (fn:empty($columnLabel)) then "" else $columnLabel },
+      element { fn:QName($NS, "sheet") }       { $sheetName },
+      element { fn:QName($NS, "col") }         { $col },
+      element { fn:QName($NS, "row") }         { $row },
+      element { fn:QName($NS, "pos") }         { $newPos },
+      element { fn:QName($NS, "dvalue") }      { if (fn:empty($newValue)) then () else $newValue }
+    }
 
   return $doc
 };
@@ -349,16 +661,17 @@ declare function ingest:expansionElement($dname as xs:string, $sheetName as xs:s
  :
  : @param $doc
  :)
-declare function ingest:columnExpandDoc($dname as xs:string, $sheetName as xs:string, $col1 as xs:string, $row1 as xs:string, $col2 as xs:string, $table as map:map)
+declare function ingest:columnExpandDoc($dn as node(), $table as map:map)
 {
-  let $cpCol1 := fn:string-to-codepoints($col1)
-  let $cpCol2 := fn:string-to-codepoints($col2)
+  let $col1 := fn:string-to-codepoints($dn/tax:col1/text())
+  let $col2 := fn:string-to-codepoints($dn/tax:col2/text())
 
   let $doc :=
-    for $col in ($cpCol1 to $cpCol2)
+    for $col in ($col1 to $col2)
+      let $row := $dn/tax:row1/text()
       let $newCol := fn:codepoints-to-string($col)
         return
-          ingest:expansionElement($dname, $sheetName, $newCol, $row1, $table)
+          ingest:expansionElement($dn, xs:string($row), $newCol, $table)
 
   return $doc
 };
@@ -368,13 +681,14 @@ declare function ingest:columnExpandDoc($dname as xs:string, $sheetName as xs:st
  :
  : @param $doc
  :)
-declare function ingest:rowExpandDoc($dname as xs:string, $sheetName as xs:string, $col1 as xs:string, $row1 as xs:string, $row2 as xs:string, $table as map:map)
+declare function ingest:rowExpandDoc($dn as node(), $table as map:map)
 {
   let $doc :=
-    for $row in (xs:integer($row1) to xs:integer($row2))
-      return
-        ingest:expansionElement($dname, $sheetName, $col1, $row1, $table)
-
+    for $row in ((xs:integer($dn/tax:row1/text())) to xs:integer($dn/tax:row2/text()))
+      let $col := $dn/tax:col1/text()
+        return
+          ingest:expansionElement($dn, xs:string($row), $col, $table)
+                  
   return $doc
 };
 
@@ -383,19 +697,19 @@ declare function ingest:rowExpandDoc($dname as xs:string, $sheetName as xs:strin
  :
  : @param $doc
  :)
-declare function ingest:columnRowExpandDoc($dname as xs:string, $sheetName as xs:string, $col1 as xs:string, $row1 as xs:string, $col2 as xs:string, $row2 as xs:string, $table as map:map)
+declare function ingest:columnRowExpandDoc($dn as node(), $table as map:map)
 {
   let $doc :=
-    for $row in (xs:integer($row1) to xs:integer($row2))
+    for $row in ((xs:integer($dn/tax:row1/text())) to xs:integer($dn/tax:row2/text()))
     
-      let $cpCol1 := fn:string-to-codepoints($col1)
-      let $cpCol2 := fn:string-to-codepoints($col2)
+      let $col1 := fn:string-to-codepoints($dn/tax:col1/text())
+      let $col2 := fn:string-to-codepoints($dn/tax:col2/text())
     
       return
-        for $col in ($cpCol1 to $cpCol2)
+        for $col in ($col1 to $col2)
           let $newCol := fn:codepoints-to-string($col)
             return
-              ingest:expansionElement($dname, $sheetName, $newCol, xs:string($row), $table)
+              ingest:expansionElement($dn, xs:string($row), $newCol, $table)
 
   return $doc
 };
@@ -405,327 +719,432 @@ declare function ingest:columnRowExpandDoc($dname as xs:string, $sheetName as xs
  :
  : @param $doc
  :)
-declare function ingest:expandDoc($dname as xs:string, $sheetName as xs:string, $dnCells as node(), $table as map:map)
+declare function ingest:expandDoc($doc as node(), $table as map:map)
 {
-  let $col1 := $dnCells/tax:cell1/tax:col/text()
-  let $row1 := $dnCells/tax:cell1/tax:row/text()
-
-  let $col2 := $dnCells/tax:cell2/tax:col/text()
-  let $row2 := $dnCells/tax:cell2/tax:row/text()
-
-  let $log := xdmp:log("8-1 ----- expandDoc: $col1: "||$col1||" : $row1: "||$row1)
-  let $log := xdmp:log("8-2 ----- expandDoc: $col2: "||$col2||" : $row2: "||$row2)
-
   let $newDoc :=
     element { fn:QName($NS, "definedNames") }
     {
-      if (fn:empty($dnCells/tax:cell2)) then
-      (
-        (: No Expansion :)
-        xdmp:log("9 ----- expandDoc: No Expansion"),
-
-        ingest:expansionElement($dname, $sheetName, $col1, $row1, $table)
-      )
-      else
-      if (($row1 ne $row2) and ($col1 ne $col2)) then
-      (
-        (: Row and Column Expansion :)
-        xdmp:log("9 ----- expandDoc: Row and Column Expansion"),
-        
-        ingest:columnRowExpandDoc($dname, $sheetName, $col1, $row1, $col2, $row2, $table)
-      )
-      else
-      if ($row1 eq $row2) then
-      (
-        (: Column Expansion :)
-        xdmp:log("9 ----- expandDoc: Column Expansion"),
-        
-        ingest:columnExpandDoc($dname, $sheetName, $col1, $row1, $col2, $table)
-      )
-      else
-      if ($col1 eq $col2) then
-      (
-        (: Row Expansion :)
-        xdmp:log("9 ----- expandDoc: Row Expansion"),
-        
-        ingest:rowExpandDoc($dname, $sheetName, $col1, $row1, $row2, $table)
-      )
-      else ()
+      for $dn in $doc/tax:definedName
+        return
+          if (fn:empty($dn/tax:row2/text())) then
+          (
+            (: No Expansion :)
+            ingest:expansionElement($dn, xs:string($dn/tax:row1/text()), $dn/tax:col1/text(), $table)
+          )
+          else
+          if (($dn/tax:row1/text() ne $dn/tax:row2/text()) and ($dn/tax:col1/text() ne $dn/tax:col2/text())) then
+          (
+            (: Row and Column Expansion :)
+            ingest:columnRowExpandDoc($dn, $table)
+          )
+          else
+          if ($dn/tax:row1/text() eq $dn/tax:row2/text()) then
+          (
+            (: Column Expansion :)
+            ingest:columnExpandDoc($dn, $table)
+          )
+          else
+          if ($dn/tax:col1/text() eq $dn/tax:col2/text()) then
+          (
+            (: Row Expansion :)
+            ingest:rowExpandDoc($dn, $table)
+          )
+          else ()
     }
-
+    
   return $newDoc
 };
 
 (:~
  : Extract Spreadsheet Data
  :
- : @param $user
- : @param $excelFile
- : @param $fileUri
+ : @param $zipfile
  :)
-declare function ingest:extractSpreadsheetData($user as xs:string, $excelFileName as xs:string, $binFileUri as xs:string)
+declare function ingest:extractSpreadsheetData(
+  $userFullName as xs:string,
+  $user as xs:string,
+  $excelFile as xs:string,
+  $fileUri as xs:string)
 {
+  let $binFile  := xdmp:document-get($excelFile)
+
   let $exclude :=
   (
     "[Content_Types].xml", "docProps/app.xml", "xl/theme/theme1.xml", "xl/styles.xml", "_rels/.rels",
-    "xl/vbaProject.bin", "xl/media/image1.png", "xl/media/image2.jpeg"
+    "xl/vbaProject.bin", "xl/media/image1.png"
   )
 
-  let $excelFile := xdmp:document-get($excelFileName)
-
   let $table := map:map()
-
+  
   let $docs :=
-          for $x in xdmp:zip-manifest($excelFile)//zip:part/text()
-            where
-              (($x = $exclude) eq fn:false()) and
-              fn:not(fn:starts-with($x, "xl/printerSettings/printerSettings")) and
-              fn:not(fn:ends-with($x, ".bin")) and
-              fn:not(fn:ends-with($x, ".jpeg"))
-              return
-              (
-                map:put($table, $x, xdmp:zip-get($excelFile, $x, $OPTIONS)),
-                $x
-              )
+    for $x in xdmp:zip-manifest($binFile)//zip:part/text()
+      where (($x = $exclude) eq fn:false()) and fn:not(fn:starts-with($x, "xl/printerSettings/printerSettings"))
+        return
+          map:put($table, $x, xdmp:zip-get($binFile, $x, $OPTIONS))
 
   let $wkBook        := map:get($table, "xl/workbook.xml")/ssml:workbook
-  let $rels          := map:get($table, "xl/_rels/workbook.xml.rels")/rel:Relationships
-
-let $log := xdmp:log("1 ----- extracting file: "||$excelFileName)
-
+  
   let $defnames      :=
     for $item in $wkBook/ssml:definedNames/node()
-      where
-          fn:not(fn:starts-with($item/text(), "#REF!")) and
-          fn:not($item[@hidden=1]) and
-          fn:empty($item[@localSheetId])
-        return
-          $item
-
-let $log := xdmp:log("2 ----- defnames count: "||fn:count($defnames))
-
-  let $wkSheetList :=
-    for $item at $n in $wkBook/ssml:sheets/ssml:sheet
-      where fn:empty($item/@state)
-        return 
-          $item
-
-let $log := xdmp:log("3 ----- $wkSheetList count: "||fn:count($wkSheetList))
-
-  let $sheetDetailsList     :=
-    for $rel in $rels/rel:Relationship
-      let $sheetName := "xl/"||$rel/@Target
-      let $wkSheet   := map:get($table, $sheetName)
-      let $valid     := $wkSheetList[@r:id=$rel/@Id]
-      where
-          fn:starts-with($sheetName, "xl/worksheets/") and
-          fn:not(fn:empty($valid))
-        order by $sheetName
-          return
-            $wkSheet
-
-let $log := xdmp:log("4 ----- $sheetDetailsList count: "||fn:count($sheetDetailsList))
-
+      where fn:not(fn:starts-with($item/text(), "#REF!"))
+        return $item
+    
+  let $wkSheetList   := $wkBook/ssml:sheets/ssml:sheet
+  let $rels          := map:get($table, "xl/_rels/workbook.xml.rels")/rel:Relationships
   let $sharedStrings := map:get($table, "xl/sharedStrings.xml")/ssml:sst/ssml:si/ssml:t/text()
 
-  (:
-     1st Pass - create temp doc that has a special expand node.
-     Expand node is used in the 2nd pass to expand the number of cells.
-  :)
-  let $wsDocs :=
-    for $item at $n in $wkSheetList
-      let $log := xdmp:log("5 ----- $wkSheet: "||xs:string($item/@name)||" --- "||$n||" of "||fn:count($wkSheetList))
-      return
-        ingest:CreateWorksheetDoc($user, $excelFileName, $item, $defnames, $table)
-
-  (: --- Doc Inserts --- :)
-  let $uriList :=
-    for $wsDoc in $wsDocs
-      let $uri := "/user/"||$user||"/"||xdmp:hash64($wsDoc)||".xml"
-      let $log := xdmp:log("111 ----- inserting $uri = "||$uri)
-      return
-      (
-        $uri,
-        xdmp:document-insert($uri, $wsDoc, xdmp:default-permissions(), ("spreadsheet"))
-      )
-
-  return fn:count($uriList)
-};
-
-(:~
- :)
-declare function ingest:CreateWorksheetDoc($user as xs:string, $fileUri as xs:string, $wkSheet as item()*, $defnames as item()*, $table as map:map)
-{
-  let $wsName   := xs:string($wkSheet/@name)
-  let $dateTime := fn:current-dateTime()
-
-  let $rels       := map:get($table, "xl/_rels/workbook.xml.rels")/rel:Relationships
-  let $wkSheetKey := "xl/"||xs:string($rels/rel:Relationship[@Id=$wkSheet/@r:id/fn:string()]/@Target)
-  let $relWkSheet := map:get($table, $wkSheetKey)
-  let $dim        := $relWkSheet/ssml:worksheet/ssml:dimension/@ref/fn:string()
-
-(:
-    element { fn:QName($NS, "sheetData") }
+  let $workSheets :=
+    element { fn:QName($NS, "worksheets") }
     {
-      for $cell in $relWkSheet/ssml:worksheet/ssml:sheetData/ssml:row
-        let $row  := xs:string($cell/@r)
-        for $column in $cell/ssml:c
-          let $pos   := xs:string($column/@r)
-          let $col   := fn:tokenize($pos, "[\d]+")[1] (: Tokenize to support more than 1 char like ABC7, AAA8 :)
-          let $ref   := xs:string($column/@t)
-          let $value := xs:string($column/ssml:v)
-          let $val   := if ($ref eq "s") then $sharedStrings[xs:integer($value) + 1] else $value
-          let $type  := if ($ref eq "s") then "string" else "integer"
+      for $ws in $wkSheetList
+        let $wkSheetKey := "xl/"||xs:string($rels/rel:Relationship[@Id=$ws/@wbrel:id/fn:string()]/@Target)
+        let $relWkSheet := map:get($table, $wkSheetKey)
+        let $dim := $relWkSheet/ssml:worksheet/ssml:dimension/@ref/fn:string()
+        where fn:empty($ws/@state)
           return
-            element { fn:QName($NS, "cell") }
+            element { fn:QName($NS, "worksheet") }
             {
-              element { fn:QName($NS, "col") }   { $col },
-              element { fn:QName($NS, "row") }   { $row },
-              element { fn:QName($NS, "pos") }   { $pos },
-              element { fn:QName($NS, "dtype") } { $type },
-              element { fn:QName($NS, "val") }   { $val }
+              element { fn:QName($NS, "name") } { $ws/@name/fn:string() },
+              element { fn:QName($NS, "key") } { $wkSheetKey },
+              element { fn:QName($NS, "dimension") }
+              {
+                element { fn:QName($NS, "topLeft") } { fn:tokenize($dim, ":") [1] },
+                element { fn:QName($NS, "bottomRight") } { fn:tokenize($dim, ":") [2] }
+              },
+              element { fn:QName($NS, "sheetData") }
+              {
+                for $cell in $relWkSheet/ssml:worksheet/ssml:sheetData/ssml:row
+                  let $row  := xs:string($cell/@r)
+                  for $column in $cell/ssml:c
+                    let $pos   := xs:string($column/@r)
+                    let $col   := fn:tokenize($pos, "[\d]+")[1] (: Tokenize to support more than 1 char like ABC7, AAA8 :)
+                    let $ref   := xs:string($column/@t)
+                    let $value := xs:string($column/ssml:v)
+                    let $val   := if ($ref eq "s") then $sharedStrings[xs:integer($value) + 1] else $value
+                    let $type  := if ($ref eq "s") then "string" else "integer"
+                    return
+                      element { fn:QName($NS, "cell") }
+                      {
+                        element { fn:QName($NS, "col") }   { $col },
+                        element { fn:QName($NS, "row") }   { $row },
+                        element { fn:QName($NS, "pos") }   { $pos },
+                        element { fn:QName($NS, "dtype") } { $type },
+                        element { fn:QName($NS, "val") }   { $val }
+                      }
+              }
             }
     }
-:)
 
-  let $wkSheetDoc :=
-    element { fn:QName($NS, "worksheet") }
+  (:
+     1st Pass - create temp doc that has an special expand node.
+     Expand node is used in the 2nd pass to expand the number of cells.
+  :)
+  let $defNamePass1Doc :=
+        element { fn:QName($NS, "definedNames") }
+        {
+          for $dn in $defnames
+            let $att    := xs:string($dn/@name)
+            
+            (: There can be multiple dname items: 'T010'!$A$1:$O$56,'T010'!$A$57:$K$77 :)
+            let $item1  := fn:tokenize($dn/text(), ",") [1]
+            
+            (: Use item1 for now. Add multiple items later :) 
+            let $sheet  := fn:replace(fn:tokenize($item1, "!") [1], "'", "")
+
+            let $cell   := fn:tokenize($item1, "!") [2]
+            let $pos    := fn:replace($cell, "\$", "")
+            
+            let $pos1   := fn:tokenize($pos, ":") [1]
+            let $pos2   := fn:tokenize($pos, ":") [2]
+            
+            let $col    := fn:tokenize($pos1, "[0-9]") [1]
+            
+            let $col1 := fn:tokenize($pos1, "[\d]+")[1]
+            let $col2 := fn:tokenize($pos2, "[\d]+")[1]
+
+            let $row1   := fn:tokenize($pos1, "[A-Za-z]+") [2]
+            let $row2   := fn:tokenize($pos2, "[A-Za-z]+") [2]
+            
+            let $lblCol      := $col1
+            let $val         := ingest:getValue($row1, $col1, $sheet, $table)
+            let $rowLabel    := ingest:findRowLabel($row1, $col1, $sheet, $table)
+            let $columnLabel := ingest:findColumnLabel($row1, $col1, $sheet, $table)
+              where fn:not(fn:starts-with($att, "_")) and fn:empty($dn/@hidden)
+                return
+                  element { fn:QName($NS, "definedName") }
+                  {
+                    element { fn:QName($NS, "dname") }       { $att },
+                    element { fn:QName($NS, "rowLabel") }    { $rowLabel },
+                    element { fn:QName($NS, "columnLabel") } { $columnLabel },
+                    element { fn:QName($NS, "sheet") }       { $sheet },
+                    element { fn:QName($NS, "col1") }        { $col1 },
+                    element { fn:QName($NS, "row1") }        { $row1 },
+                    element { fn:QName($NS, "pos1") }        { $pos1 },
+                    element { fn:QName($NS, "col2") }        { $col2 },
+                    element { fn:QName($NS, "row2") }        { $row2 },
+                    element { fn:QName($NS, "pos2") }        { $pos2 },
+                    element { fn:QName($NS, "dvalue") }      { $val }
+                  }
+        }
+
+  let $dnExpansionDoc := ingest:expandDoc($defNamePass1Doc, $table)
+  
+  let $unSortedDoc :=
+      element { fn:QName($NS, "definedNames") }
+      {
+        $dnExpansionDoc/node(),
+        for $d in $defNamePass1Doc/tax:definedName
+          where fn:not(fn:empty($d/tax:pos/text()))
+            return
+              element { fn:QName($NS, "definedName") }
+              {
+                  element { fn:QName($NS, "dname") }       { $d/tax:dname/text() },
+                  element { fn:QName($NS, "rowLabel") }    { $d/tax:rowLabel/text() },
+                  element { fn:QName($NS, "columnLabel") } { $d/tax:columnLabel/text() },
+                  element { fn:QName($NS, "sheet") }       { $d/tax:sheet/text() },
+                  element { fn:QName($NS, "col") }         { $d/tax:col/text() },
+                  element { fn:QName($NS, "row") }         { $d/tax:row/text() },
+                  element { fn:QName($NS, "pos") }         { $d/tax:pos/text() },
+                  element { fn:QName($NS, "dvalue") }      { $d/tax:dvalue/text() }
+              }
+      }
+  
+  let $newDefNameDoc :=
+      element { fn:QName($NS, "definedNames") }
+      {
+        for $i in $unSortedDoc/tax:definedName
+          let $row   := xs:integer($i/tax:row/text())
+          let $seq   :=
+            if ($row lt 10) then
+              $i/tax:col/text()||"0"||$i/tax:row/text()
+            else
+              $i/tax:pos/text()
+          let $dname := $i/tax:dname/text()
+          order by $seq, $dname
+            return $i
+      }
+
+  let $doc :=
+    element { fn:QName($NS, "workbook") }
     {
       element { fn:QName($NS, "meta") }
       {
-        element { fn:QName($NS, "name") }           { $wsName },
-        element { fn:QName($NS, "file") }           { $fileUri },
-        element { fn:QName($NS, "sheetId") }        { xs:string($wkSheet/@sheetId) },
-        element { fn:QName($NS, "key") }            { $wkSheetKey },
-        element { fn:QName($NS, "user") }           { $user },
+        element { fn:QName($NS, "type") }           { "workbook" },
+        element { fn:QName($NS, "user") }           { $userFullName },
         element { fn:QName($NS, "client") }         { "Thomson Reuters" },
-        element { fn:QName($NS, "position") }
-        {
-          element { fn:QName($NS, "topLeft") }      { fn:tokenize($dim, ":") [1] },
-          element { fn:QName($NS, "bottomRight") }  { fn:tokenize($dim, ":") [2] }
-        },
         element { fn:QName($NS, "creator") }        { map:get($table, "docProps/core.xml")/core:coreProperties/dc:creator/text() },
+        element { fn:QName($NS, "file") }           { $fileUri },
         element { fn:QName($NS, "lastModifiedBy") } { map:get($table, "docProps/core.xml")/core:coreProperties/core:lastModifiedBy/text() },
         element { fn:QName($NS, "created") }        { map:get($table, "docProps/core.xml")/core:coreProperties/dcterms:created/text() },
         element { fn:QName($NS, "modified") }       { map:get($table, "docProps/core.xml")/core:coreProperties/dcterms:modified/text() }
       },
       element { fn:QName($NS, "feed") }
       {
+        $newDefNameDoc,
+        $workSheets
+      }
+    }
+
+  return $doc
+};
+
+(:~
+ : Extract Spreadsheet Data
+ :
+ : @param $zipfile
+ :)
+declare function ingest:extractGeneratedSpreadsheetData(
+  $userFullName as xs:string,
+  $user as xs:string,
+  $excelFile as node(),
+  $taxRate as xs:decimal,
+  $deductionPct as xs:decimal,
+  $totalGrossInc as xs:decimal,
+  $taxableInc as xs:decimal,
+  $fileDate as xs:string,
+  $fileUri as xs:string)
+{
+  let $exclude :=
+  (
+    "[Content_Types].xml", "docProps/app.xml", "xl/theme/theme1.xml", "xl/styles.xml", "_rels/.rels",
+    "xl/vbaProject.bin", "xl/media/image1.png"
+  )
+
+  let $table := map:map()
+  
+  let $docs :=
+    for $x in xdmp:zip-manifest($excelFile)//zip:part/text()
+      where (($x = $exclude) eq fn:false()) and fn:not(fn:starts-with($x, "xl/printerSettings/printerSettings"))
+        return
+          map:put($table, $x, xdmp:zip-get($excelFile, $x, $OPTIONS))
+
+  let $wkBook        := map:get($table, "xl/workbook.xml")/ssml:workbook
+  
+  let $defnames      :=
+    for $item in $wkBook/ssml:definedNames/node()
+      where fn:not(fn:starts-with($item/text(), "#REF!"))
+        return $item
+    
+  let $wkSheetList   := $wkBook/ssml:sheets/ssml:sheet
+  let $rels          := map:get($table, "xl/_rels/workbook.xml.rels")/rel:Relationships
+  let $sharedStrings := map:get($table, "xl/sharedStrings.xml")/ssml:sst/ssml:si/ssml:t/text()
+
+  let $workSheets :=
+    element { fn:QName($NS, "worksheets") }
+    {
+      for $ws in $wkSheetList
+        let $wkSheetKey := "xl/"||xs:string($rels/rel:Relationship[@Id=$ws/@wbrel:id/fn:string()]/@Target)
+        let $relWkSheet := map:get($table, $wkSheetKey)
+        let $dim := $relWkSheet/ssml:worksheet/ssml:dimension/@ref/fn:string()
+        where fn:empty($ws/@state)
+          return
+            element { fn:QName($NS, "worksheet") }
+            {
+              element { fn:QName($NS, "name") } { $ws/@name/fn:string() },
+              element { fn:QName($NS, "key") } { $wkSheetKey },
+              element { fn:QName($NS, "dimension") }
+              {
+                element { fn:QName($NS, "topLeft") } { fn:tokenize($dim, ":") [1] },
+                element { fn:QName($NS, "bottomRight") } { fn:tokenize($dim, ":") [2] }
+              },
+              element { fn:QName($NS, "sheetData") }
+              {
+                for $cell in $relWkSheet/ssml:worksheet/ssml:sheetData/ssml:row
+                  let $row  := xs:string($cell/@r)
+                  for $column in $cell/ssml:c
+                    let $pos   := xs:string($column/@r)
+                    let $col   := fn:tokenize($pos, "[\d]+")[1] (: Tokenize to support more than 1 char like ABC7, AAA8 :)
+                    let $ref   := xs:string($column/@t)
+                    let $value := xs:string($column/ssml:v)
+                    let $val   := if ($ref eq "s") then $sharedStrings[xs:integer($value) + 1] else $value
+                    let $type  := if ($ref eq "s") then "string" else "integer"
+                    return
+                      element { fn:QName($NS, "cell") }
+                      {
+                        element { fn:QName($NS, "col") }   { $col },
+                        element { fn:QName($NS, "row") }   { $row },
+                        element { fn:QName($NS, "pos") }   { $pos },
+                        element { fn:QName($NS, "dtype") } { $type },
+                        element { fn:QName($NS, "val") }   { $val }
+                      }
+              }
+            }
+    }
+
+  (:
+     1st Pass - create temp doc that has an special expand node.
+     Expand node is used in the 2nd pass to expand the number of cells.
+  :)
+  let $defNamePass1Doc :=
         element { fn:QName($NS, "definedNames") }
         {
-          for $dn in $defnames[1 to 200]
-
-            let $dname    := xs:string($dn/@name)
-
+          for $dn in $defnames
+            let $att    := xs:string($dn/@name)
+            
             (: There can be multiple dname items: 'T010'!$A$1:$O$56,'T010'!$A$57:$K$77 :)
             let $item1  := fn:tokenize($dn/text(), ",") [1]
             
-            (: Use item1 for now. Add support for multiple items later :) 
-            let $dnWsName  := fn:replace(fn:tokenize($item1, "!") [1], "'", "")
+            (: Use item1 for now. Add multiple items later :) 
+            let $sheet  := fn:replace(fn:tokenize($item1, "!") [1], "'", "")
+
+            let $cell   := fn:tokenize($item1, "!") [2]
+            let $pos    := fn:replace($cell, "\$", "")
             
-            let $cell := fn:tokenize($item1, "!") [2]
-            let $pos  := fn:replace($cell, "\$", "")
-            let $pos1 := fn:tokenize($pos, ":") [1]
-            let $pos2 := fn:tokenize($pos, ":") [2]
-            let $col  := fn:tokenize($pos1, "[0-9]") [1]
+            let $pos1   := fn:tokenize($pos, ":") [1]
+            let $pos2   := fn:tokenize($pos, ":") [2]
+            
+            let $col    := fn:tokenize($pos1, "[0-9]") [1]
+            
             let $col1 := fn:tokenize($pos1, "[\d]+")[1]
             let $col2 := fn:tokenize($pos2, "[\d]+")[1]
-            let $row1 := fn:tokenize($pos1, "[A-Za-z]+") [2]
-            let $row2 := fn:tokenize($pos2, "[A-Za-z]+") [2]
+
+            let $row1   := fn:tokenize($pos1, "[A-Za-z]+") [2]
+            let $row2   := fn:tokenize($pos2, "[A-Za-z]+") [2]
             
-            let $dnNode :=
-              if (fn:compare($dnWsName, $wsName) eq 0 and fn:not(fn:empty($col1))) then
-              (
-                let $log := xdmp:log("6 ----- $wsName: "||$wsName||" --- $dname: "||$dname)
-                let $log := xdmp:log(" ")
-    
-                let $lblCol      := $col1
-                
-                let $val         := ingest:getValue($col1, $row1, $wsName, $table)
-                let $rowLabel    := ingest:findRowLabel($col1, $row1, $wsName, $table)
-                let $columnLabel := ingest:findColumnLabel($col1, $row1, $wsName, $table)
-                
-                let $dnCells :=
-                    element { fn:QName($NS, "cells") }
-                    {
-                      element { fn:QName($NS, "cell1") }
-                      {
-                        element { fn:QName($NS, "col") }  { $col1 }, 
-                        element { fn:QName($NS, "row") }  { $row1 },
-                        element { fn:QName($NS, "pos") }  { $pos1 }
-                      },
-                      if (fn:string-length($pos2) gt 0) then
-                        element { fn:QName($NS, "cell2") }
-                        {
-                          element { fn:QName($NS, "col") } { $col2 }, 
-                          element { fn:QName($NS, "row") } { $row2 },
-                          element { fn:QName($NS, "pos") } { $pos2 }
-                        }
-                      else ()
-                   }
+            let $lblCol      := $col1
+            let $val         := ingest:getValue($row1, $col1, $sheet, $table)
+            let $rowLabel    := ingest:findRowLabel($row1, $col1, $sheet, $table)
+            let $columnLabel := ingest:findColumnLabel($row1, $col1, $sheet, $table)
+              where fn:not(fn:starts-with($att, "_")) and fn:empty($dn/@hidden)
+                return
+                  element { fn:QName($NS, "definedName") }
+                  {
+                    element { fn:QName($NS, "dname") }       { $att },
+                    element { fn:QName($NS, "rowLabel") }    { $rowLabel },
+                    element { fn:QName($NS, "columnLabel") } { $columnLabel },
+                    element { fn:QName($NS, "sheet") }       { $sheet },
+                    element { fn:QName($NS, "col1") }        { $col1 },
+                    element { fn:QName($NS, "row1") }        { $row1 },
+                    element { fn:QName($NS, "pos1") }        { $pos1 },
+                    element { fn:QName($NS, "col2") }        { $col2 },
+                    element { fn:QName($NS, "row2") }        { $row2 },
+                    element { fn:QName($NS, "pos2") }        { $pos2 },
+                    element { fn:QName($NS, "dvalue") }      { $val }
+                  }
+        }
 
-                let $expansionNodes := ingest:expandDoc($dname, $wsName, $dnCells, $table)
+  let $dnExpansionDoc := ingest:expandDoc($defNamePass1Doc, $table)
+  
+  let $unSortedDoc :=
+      element { fn:QName($NS, "definedNames") }
+      {
+        $dnExpansionDoc/node(),
+        for $d in $defNamePass1Doc/tax:definedName
+          where fn:not(fn:empty($d/tax:pos/text()))
+            return
+              element { fn:QName($NS, "definedName") }
+              {
+                  element { fn:QName($NS, "dname") }       { $d/tax:dname/text() },
+                  element { fn:QName($NS, "rowLabel") }    { $d/tax:rowLabel/text() },
+                  element { fn:QName($NS, "columnLabel") } { $d/tax:columnLabel/text() },
+                  element { fn:QName($NS, "sheet") }       { $d/tax:sheet/text() },
+                  element { fn:QName($NS, "col") }         { $d/tax:col/text() },
+                  element { fn:QName($NS, "row") }         { $d/tax:row/text() },
+                  element { fn:QName($NS, "pos") }         { $d/tax:pos/text() },
+                  element { fn:QName($NS, "dvalue") }      { $d/tax:dvalue/text() }
+              }
+      }
+  
+  let $newDefNameDoc :=
+      element { fn:QName($NS, "definedNames") }
+      {
+        for $i in $unSortedDoc/tax:definedName
+          let $row   := xs:integer($i/tax:row/text())
+          let $seq   :=
+            if ($row lt 10) then
+              $i/tax:col/text()||"0"||$i/tax:row/text()
+            else
+              $i/tax:pos/text()
+          let $dname := $i/tax:dname/text()
+          order by $seq, $dname
+            return $i
+      }
 
-                let $log := xdmp:log("7-1 ----- $expansionNodes: "||fn:count($expansionNodes))
-                let $log := xdmp:log("7-2 ----- $expansionNodes: "||fn:count($expansionNodes/tax:definedName))
-                let $log := xdmp:log("7-3 ----- $expansionNodes: "||fn:count($expansionNodes/../tax:definedName))
-                let $log := xdmp:log("7-4 ----- $expansionNodes: "||$expansionNodes/tax:definedName/tax:dname/text())
+  let $doc :=
+    element { fn:QName($NS, "workbook") }
+    {
+      element { fn:QName($NS, "meta") }
+      {
+        element { fn:QName($NS, "type") }           { "workbook" },
+        element { fn:QName($NS, "user") }           { $userFullName },
+        element { fn:QName($NS, "client") }         { "Thomson Reuters" },
+        element { fn:QName($NS, "creator") }        { map:get($table, "docProps/core.xml")/core:coreProperties/dc:creator/text() },
+        element { fn:QName($NS, "file") }           { $fileUri },
+        element { fn:QName($NS, "fileDate") }       { $fileDate },
+        element { fn:QName($NS, "taxBracket") }     { $taxRate * 100 },
+        element { fn:QName($NS, "deductionPct") }   { $deductionPct },
+        element { fn:QName($NS, "totalGrossInc") }  { $totalGrossInc },
+        element { fn:QName($NS, "taxableInc") }     { $taxableInc },
+        element { fn:QName($NS, "lastModifiedBy") } { map:get($table, "docProps/core.xml")/core:coreProperties/core:lastModifiedBy/text() },
+        element { fn:QName($NS, "created") }        { map:get($table, "docProps/core.xml")/core:coreProperties/dcterms:created/text() },
+        element { fn:QName($NS, "modified") }       { map:get($table, "docProps/core.xml")/core:coreProperties/dcterms:modified/text() }
+      },
+      element { fn:QName($NS, "feed") }
+      {
+        $newDefNameDoc,
+        $workSheets
+      }
+    }
 
-                let $unsortedDefNames :=
-                    element { fn:QName($NS, "definedNames") }
-                    {
-                      element { fn:QName($NS, "definedName") }
-                      {
-                        (: element { fn:QName($NS, "debug") }  { $dn/text() }, :)
-                        element { fn:QName($NS, "dname") }       { $dname },
-                        element { fn:QName($NS, "rowLabel") }    { if (fn:empty($rowLabel)) then "none" else $rowLabel },
-                        element { fn:QName($NS, "columnLabel") } { if (fn:empty($columnLabel)) then "none" else $columnLabel },
-                        element { fn:QName($NS, "col") }         { $col1 },
-                        element { fn:QName($NS, "row") }         { $row1 },
-                        element { fn:QName($NS, "pos") }         { $pos1 },
-                        element { fn:QName($NS, "dvalue") }      { $val }
-                      },                      (: definedName :)
-                      $expansionNodes         (: more definedName :)
-                    }
-
-                let $log := xdmp:log("7-3 ----- $unsortedDefNames: "||fn:count($unsortedDefNames/tax:definedName))
-                let $log := xdmp:log("7-4 ----- $unsortedDefNames: "||$unsortedDefNames/tax:definedName[1]/tax:dname/text())
-                let $log := xdmp:log("7-5 ----- $unsortedDefNames: "||$unsortedDefNames/tax:definedName[1]/tax:dvalue/text())
-                let $log := xdmp:log(" ")
-
-                let $sortedDefNames :=
-                    element { fn:QName($NS, "definedNames") }
-                    {
-                      for $i in $unsortedDefNames/tax:definedName
-                        let $row   := xs:integer($i/tax:row/text())
-                        let $seq   :=
-                          if ($row lt 10) then
-                            $i/tax:col/text()||"0"||$i/tax:row/text()
-                          else
-                            $i/tax:pos/text()
-                        let $dname := $i/tax:dname/text()
-                        order by $seq, $dname
-                          return $i
-                    }
-                    
-                return $sortedDefNames
-            )
-            else ()
-(:            
-            where
-                (fn:compare($dnWsName, $wsName) eq 0)
-                (: and fn:not(fn:empty($col1)) :)
-                (: and fn:empty($wkSheet/@state) :)
-:)
-              return
-                $dnNode
-          },          (: definedNames :)
-          element { fn:QName($NS, "sheetData") }
-          {
-            "reserved for sheet data"
-          }           (: sheetData :)
-        }             (: feed :)
-      }               (: workSheet :)
-    
-    return $wkSheetDoc
+  return $doc
 };
