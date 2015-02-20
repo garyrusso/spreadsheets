@@ -848,7 +848,7 @@ declare function ingest:extractSpreadsheetData(
             (: There can be multiple dname items: 'T010'!$A$1:$O$56,'T010'!$A$57:$K$77 :)
             let $item1  := fn:tokenize($dn/text(), ",") [1]
             
-            (: Use item1 for now. Add multiple items later :) 
+            (: Use item1 for now. Add support for multiple items later :) 
             let $sheet  := fn:replace(fn:tokenize($item1, "!") [1], "'", "")
 
             let $cell   := fn:tokenize($item1, "!") [2]

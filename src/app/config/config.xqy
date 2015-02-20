@@ -152,6 +152,13 @@ declare variable $c:SEARCH-OPTIONS :=
         <facet-option>limit=10</facet-option>
       </range>
     </constraint>
+    <constraint name="rowLabels">
+      <range type="xs:string">
+        <element ns="http://tax.thomsonreuters.com" name="rowLabel"/>
+        <facet-option>descending</facet-option>
+        <facet-option>limit=5</facet-option>
+      </range>
+    </constraint>
     <constraint name="dnames">
       <range type="xs:string">
         <element ns="http://tax.thomsonreuters.com" name="dname"/>
