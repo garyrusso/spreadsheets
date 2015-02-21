@@ -10,7 +10,7 @@ xquery version "1.0-ml";
 
 module namespace ssheet = "http://marklogic.com/roxy/lib/ssheet";
 
-import module namespace mem    = "http://xqdev.com/in-mem-update"       at '/MarkLogic/appservices/utils/in-mem-update.xqy';
+import module namespace mem    = "http://xqdev.com/in-mem-update" at '/MarkLogic/appservices/utils/in-mem-update.xqy';
 
 declare namespace zip     = "xdmp:zip";
 declare namespace ssml    = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
@@ -61,7 +61,6 @@ declare function ssheet:generate-simple-xl-ooxml
       <part>docProps/core.xml</part>
       <part>docProps/custom.xml</part>
       <part>xl/_rels/workbook.xml.rels</part>
-      <part>xl/calcChain.xml</part>
       <part>xl/drawings/drawing1.xml</part>
       <part>xl/sharedStrings.xml</part>
       <part>xl/styles.xml</part>
@@ -82,7 +81,7 @@ declare function ssheet:generate-simple-xl-ooxml
       $coreDoc,
       $customDoc,
       $wkBookRels,
-      $calcChain,
+      (: $calcChain, :)
       $drawings,
       $sharedStrings,
       $styles,
@@ -99,55 +98,103 @@ declare function ssheet:generate-simple-xl-ooxml
     xdmp:zip-create($manifest, $parts)
 };
 
-declare function ssheet:updateCellsbyDName($sheetKey as xs:string, $dnodes as node(), $table as map:map)
+declare function ssheet:updateCellsbyDName($sheetKey as xs:string, $userData as node(), $table as map:map)
 {
-  (: fixed at 10 changes for now :)
-
   (: Add code to get sheet name from workbook and workbook rels (xl/_rels/workbook.xml.rels) :)
   let $wkBook       := map:get($table, "xl/workbook.xml")
   let $rels         := map:get($table, "xl/_rels/workbook.xml.rels")
   let $sheet        := map:get($table, $sheetKey)
-(:
-  let $doc2 := mem:node-replace($doc1/feed/row/c[@r="F4"]/v, $newNodes/v[1])
-  let $doc3 := mem:node-replace($doc2/feed/row/c[@r="G4"]/v, $newNodes/v[2])
-:)
-  let $dname := $dnodes/tax:dname[1]
-  let $val   := $dnodes/tax:dname[1]/tax:value/text()
 
-  let $doc := ssheet:updateCell($sheet, $dnodes/tax:dname[2], $table)
+  (: $sheet/ssml:worksheet/ssml:sheetData :)
+  let $sheetDataNode := $sheet/ssml:worksheet/ssml:sheetData
+
+  let $userDataCellValues := ssheet:getUserDataCellPosAndValue($userData, $table)
+
+  (: rebuild the sheetData node :)
+  let $sheetData :=
+    element { fn:QName($SSMLNS,"sheetData") }
+    {
+      for $row in $sheetDataNode/ssml:row
+        return
+          element { fn:QName($SSMLNS,"row") }
+          {
+            for $a in $row/@*
+              let $aname  := fn:node-name($a)
+              return
+                attribute { $aname } { $a },
+            for $cnode in $row/ssml:c
+              let $pos := xs:string($cnode/@r)
+
+              (: selector - is this cellPos referenced in the dname list? :)
+              let $newVal := $userDataCellValues/cell[pos=$pos]/val/text()
+
+              let $childNodes := $cnode/ssml:*
+              return
+                element { fn:QName($SSMLNS,"c") }
+                {
+                  for $a in $cnode/@*
+                    return
+                      attribute { fn:node-name($a) } { $a },
+                  if ((fn:count($childNodes) eq 0) and (fn:string-length($newVal) gt 0)) then
+                    element { fn:QName($SSMLNS,"v") } { $newVal }
+                  else
+                    for $child in $cnode/ssml:*
+                      let $childName := fn:node-name($child)
+                      let $childNodeName := ""||$childName (: used this to convert to xs:string() :)
+                        return
+                        (
+                          if ($childNodeName eq "v") then
+                          (
+                            if (fn:empty($newVal)) then
+                              element { $childName } { $child/text() }
+                            else
+                              element { $childName } { $newVal }
+                          )
+                          else
+                            element { $childName } { $child/text() }
+                        )
+                }
+          }
+    }
+
+  let $newDoc := mem:node-replace($sheet/ssml:worksheet/ssml:sheetData, $sheetData)
+
+  return $newDoc
+};
+
+declare function ssheet:getUserDataCellPosAndValue($userData as node(), $table as map:map)
+{
+  let $dnames := $userData/tax:dname/tax:name/text()
+
+  let $doc :=
+    element { "cells" }
+    {
+      for $dname in $dnames
+        let $cellNode := ssheet:getDNamePosAndValue($dname, $userData, $table)
+        return
+          $cellNode/cell
+    }
 
   return $doc
 };
 
-declare function ssheet:updateCell($sheet as node(), $dn as node(), $table as map:map)
+declare function ssheet:getDNamePosAndValue($dname as xs:string, $userData as node(), $table as map:map)
 {
-  let $dname := $dn/tax:name/text()
-  let $val   := $dn/tax:value/text()
-  
-  let $log := xdmp:log("1 -------------- $dname name: '"||$dname||"'")
-  let $log := xdmp:log("2 -------------- $dname val:  '"||$val||"'")
-
-  let $cell := ssheet:getCellsbyDName($dname, $table)
-
-  let $row  := $cell/cells/cell[1]/row/text()
-  let $pos  := $cell/cells/cell[1]/pos/text()
-
-  let $sheetCell    := $sheet/ssml:worksheet/ssml:sheetData/ssml:row[@r=$row]/ssml:c[@r=$pos]/ssml:v
-  let $newSheetCell := element { fn:QName($SSMLNS, "v") } { $val }
-
-  let $log := xdmp:log("3 -------------- $sheetCell val: '"||$sheetCell/text()||"'")
-  let $log := xdmp:log("  -------------- ")
+  let $dnamePositions := ssheet:getCellsbyDName($dname, $table)
+  let $cells := $dnamePositions/cells/cell
 
   let $doc :=
-    if (fn:empty($sheetCell)) then
-      mem:node-insert-child($sheet/ssml:worksheet/ssml:sheetData/ssml:row[@r=$row]/ssml:c[@r=$pos], $newSheetCell)
-    else
-      mem:node-replace($sheetCell, $newSheetCell)
+    element { "cells" }
+    {
+      for $cell in $cells
+        return
+          element { "cell" }
+          {
+            element { "pos" }  { $cell/pos/text() },
+            element { "val" }  { $userData/tax:dname[tax:name=$dname]/tax:value/text() }
+          }
+    }
     
-  let $log := xdmp:log("4 -------------- $newSheetCell row: "||$row)
-  let $log := xdmp:log("5 -------------- $newSheetCell pos: "||$pos)
-  let $log := xdmp:log("6 -------------- $newSheetCell val: '"||$doc/ssml:worksheet/ssml:sheetData/ssml:row[@r=$row]/ssml:c[@r=$pos]/ssml:v/text()||"'")
-  
   return $doc
 };
 
@@ -267,11 +314,7 @@ declare function ssheet:getCellsbyDName($dname as xs:string, $table as map:map)
   return $doc
 };
 
-declare function ssheet:createSpreadsheetFile(
-  $user as xs:string,
-  $filingDate as xs:string,
-  $excelUri as xs:string,
-  $userData as node())
+declare function ssheet:createSpreadsheetFileAndApplyUserData($excelUri as xs:string, $userData as node())
 {
   let $excelFile := fn:doc($excelUri)
   
@@ -306,6 +349,9 @@ declare function ssheet:createSpreadsheetFile(
 
   let $newSheet1 := ssheet:updateCellsbyDName("xl/worksheets/sheet1.xml", $userData, $table)
 
+  (: GR001: Temp Fix for calcChain Error on File Open :)
+  let $calcChain1 := document { element { fn:QName($SSMLNS, "calcChain") } { element { fn:QName($SSMLNS, "c") } { attribute { "r" } { "H3" }, attribute { "i" } { "1" } } } }
+
   let $binDoc :=
     ssheet:generate-simple-xl-ooxml(
       $relsRels,
@@ -314,7 +360,7 @@ declare function ssheet:createSpreadsheetFile(
       $coreDoc,
       $customDoc,
       $wkBookRels,
-      $calcChain,
+      $calcChain1,
       $drawings,
       $sharedStrings,
       $styles,
@@ -328,9 +374,32 @@ declare function ssheet:createSpreadsheetFile(
      )
 
   return
-  (
-    (: xdmp:document-insert($fileUri, $binDoc, xdmp:default-permissions(), ("binary")), :)
     $binDoc
-  )
+};
+
+declare function ssheet:createSpreadsheetFile($userData as node())
+{
+  let $excelUri1 := $userData/../../tax:meta/tax:templateFile/text()
+  let $excelUri2 := $userData/tax:userData/tax:meta/tax:templateFile/text()
+
+  let $excelUri :=
+    if (fn:string-length($excelUri1) gt 0) then
+      $excelUri1
+    else
+      $excelUri2
+  
+  let $log := xdmp:log("1 ----- excelUri: "||$excelUri)
+
+  let $binDoc :=
+    if ((fn:string-length($excelUri) gt 0) and (fn:doc($excelUri))) then
+      ssheet:createSpreadsheetFileAndApplyUserData($excelUri, $userData)
+    else
+      ()
+  
+  return
+    if (fn:empty($binDoc)) then
+      element {"status"} { "Invalid Excel Template File: "||"'"||$excelUri||"'" }
+    else
+      $binDoc
 };
 
