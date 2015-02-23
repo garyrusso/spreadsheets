@@ -5,6 +5,7 @@ module namespace tr = "http://marklogic.com/rest-api/resource/wpaper";
 import module namespace ssheet = "http://marklogic.com/roxy/lib/ssheet" at "/app/lib/spreadsheet.xqy";
 
 declare namespace roxy = "http://marklogic.com/roxy";
+declare namespace tax  = "http://tax.thomsonreuters.com";
 
 (: 
  : To add parameters to the functions, specify them in the params annotations. 
@@ -80,6 +81,7 @@ function tr:post(
 ) as document-node()*
 {
 (:
+  let $output-types := map:put($context,"output-types","application/xml")
   let $output-types := map:put($context,"output-types","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 :)
   let $output-types := map:put($context,"output-types","application/xml")
@@ -97,17 +99,34 @@ function tr:post(
       ""
     else
       map:get($params, "txid")
-      
-  let $excelUri := "/template/C2903000/bin/C2903000.xlsx" (: $userDataDoc/tax:meta/tax:templateFile/text() :)
+(:
+  let $excelUri :=
+    if (fn:empty($userDataDoc)) then
+      "/template/C2903000/bin/C2903000.xlsx"
+    else
+      $userDataDoc/tax:meta/tax:templateFile/text()
+:)
+  let $excelUri := $userDataDoc/tax:userData/tax:meta/tax:templateFile/text()
   
-  let $user         := "janedoe0041"
-  let $userExcelUri := "/user/"||$user||"/"||"test1"||fn:tokenize($excelUri, "/")[fn:last()]
+  let $user := "janedoe0041"
+  let $uri  := "/user/"||$user||"/"||"test1"||fn:tokenize($excelUri, "/")[fn:last()]
 
   let $binDoc := ssheet:createSpreadsheetFile($userDataDoc)
-  (:
-  let $_      := xdmp:document-insert($userExcelUri, $binDoc, xdmp:default-permissions(), ("userspreadsheet"))
-  :)
-    
+
+  let $evalCmd :=
+    fn:concat
+    (
+      'declare variable $uri external;
+       declare variable $binDoc external;
+       xdmp:document-insert($uri, $binDoc, xdmp:default-permissions(), ("userspreadsheet"))'
+    )
+
+  let $doc :=
+    xdmp:eval(
+      $evalCmd,
+      (xs:QName("uri"), $uri, xs:QName("binDoc"), $binDoc)
+	  )
+
   let $response :=
     element { "response" }
     {

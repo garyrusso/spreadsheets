@@ -164,7 +164,7 @@ declare function ssheet:updateCellsbyDName($sheetKey as xs:string, $userData as 
 
 declare function ssheet:getUserDataCellPosAndValue($userData as node(), $table as map:map)
 {
-  let $dnames := $userData/tax:dname/tax:name/text()
+  let $dnames := $userData/tax:userData/tax:feed/tax:dnames/tax:dname/tax:name/text()
 
   let $doc :=
     element { "cells" }
@@ -191,7 +191,7 @@ declare function ssheet:getDNamePosAndValue($dname as xs:string, $userData as no
           element { "cell" }
           {
             element { "pos" }  { $cell/pos/text() },
-            element { "val" }  { $userData/tax:dname[tax:name=$dname]/tax:value/text() }
+            element { "val" }  { $userData/tax:userData/tax:feed/tax:dnames/tax:dname[tax:name=$dname]/tax:value/text() }
           }
     }
     
@@ -206,7 +206,7 @@ declare function ssheet:getCellsbyDName($dname as xs:string, $table as map:map)
     let $dn := "Store!$E$15:$I$15"
     let $dn := "Store!$E$15:$G$21"
   :)
-  
+
   let $wkBook        := map:get($table, "xl/workbook.xml")
   let $dn := $wkBook/ssml:workbook/ssml:definedNames/ssml:definedName[@name=$dname]/text()
 
@@ -379,6 +379,7 @@ declare function ssheet:createSpreadsheetFileAndApplyUserData($excelUri as xs:st
 
 declare function ssheet:createSpreadsheetFile($userData as node())
 {
+(:
   let $excelUri1 := $userData/../../tax:meta/tax:templateFile/text()
   let $excelUri2 := $userData/tax:userData/tax:meta/tax:templateFile/text()
 
@@ -387,7 +388,9 @@ declare function ssheet:createSpreadsheetFile($userData as node())
       $excelUri1
     else
       $excelUri2
-  
+:)
+  let $excelUri := $userData/tax:userData/tax:meta/tax:templateFile/text()
+
   let $log := xdmp:log("1 ----- excelUri: "||$excelUri)
 
   let $binDoc :=
