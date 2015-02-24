@@ -164,7 +164,7 @@ declare function ssheet:updateCellsbyDName($sheetKey as xs:string, $userData as 
 
 declare function ssheet:getUserDataCellPosAndValue($userData as node(), $table as map:map)
 {
-  let $dnames := $userData/tax:userData/tax:feed/tax:dnames/tax:dname/tax:name/text()
+  let $dnames := fn:distinct-values($userData/tax:userData/tax:feed/tax:dnames/tax:dname/tax:name/text())
 
   let $doc :=
     element { "cells" }
@@ -186,18 +186,17 @@ declare function ssheet:getDNamePosAndValue($dname as xs:string, $userData as no
   let $doc :=
     element { "cells" }
     {
-      for $cell in $cells
+      for $userVal at $n in $userData/tax:userData/tax:feed/tax:dnames/tax:dname[tax:name=$dname]
         return
           element { "cell" }
           {
-            element { "pos" }  { $cell/pos/text() },
-            element { "val" }  { $userData/tax:userData/tax:feed/tax:dnames/tax:dname[tax:name=$dname]/tax:value/text() }
+            element { "pos" } { $dnamePositions/cells/cell[$n]/pos/text() },
+            element { "val" } { $userVal/tax:value/text() }
           }
     }
     
   return $doc
 };
-
 declare function ssheet:getCellsbyDName($dname as xs:string, $table as map:map)
 {
   (: Test Cases :)

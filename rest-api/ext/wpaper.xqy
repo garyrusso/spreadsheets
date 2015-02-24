@@ -6,6 +6,9 @@ import module namespace ssheet = "http://marklogic.com/roxy/lib/ssheet" at "/app
 
 declare namespace roxy = "http://marklogic.com/roxy";
 declare namespace tax  = "http://tax.thomsonreuters.com";
+declare namespace xs   = "http://www.w3.org/2001/XMLSchema";
+
+declare option xdmp:mapping "false";
 
 (: 
  : To add parameters to the functions, specify them in the params annotations. 
@@ -23,18 +26,66 @@ function tr:get(
   $params  as map:map
 ) as document-node()*
 {
+(:
+  let $outputTypes        := map:put($context,"output-types","application/x-download")
+:)
+  
+  let $contentDisposition := xdmp:add-response-header("Content-Disposition", 'attachment; filename="workpaper.xlsx"')
+  let $responseCode       := xdmp:set-response-code(300, "OK")
+  
+  let $uri :=
+    if (fn:empty(map:get($params, "uri"))) then
+      ""
+    else
+      map:get($params, "uri")
+
+  let $txid :=
+    if (fn:empty(map:get($params, "txid"))) then
+      ""
+    else
+      map:get($params, "txid")
+      
+  let $userData := fn:doc($uri)
+  
+  let $binDoc := ssheet:createSpreadsheetFile($userData)
+  
+  return
+    document {
+      try {
+        $binDoc
+      } catch ($e) {
+        element error { $e/error:message }
+      }
+    }
+
+(:
   let $q   := map:get($params, "q")
-  let $doc :=
+  let $uri :=
+    if (fn:empty(map:get($params, "uri"))) then
+      ""
+    else
+      map:get($params, "uri")
+
+  let $response :=
     element { "response" }
     {
-      element { "status" } { "Workpaper GET called" }
+      element { "input" }
+      {
+        element { "uri" }  { $uri }
+      },
+      element { "status" }
+      {
+        element { "elapsedTime" } { xdmp:elapsed-time() },
+        element { "status" } { "Workpaper GET called" }
+      }
     }
 
   return
     document
     {
-      $doc
+      $response
     }
+:)
 };
 
 (:
@@ -84,6 +135,7 @@ function tr:post(
   let $output-types := map:put($context,"output-types","application/xml")
   let $output-types := map:put($context,"output-types","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 :)
+
   let $output-types := map:put($context,"output-types","application/xml")
 
   let $userDataDoc :=  document { $input }
@@ -127,12 +179,15 @@ function tr:post(
       (xs:QName("uri"), $uri, xs:QName("binDoc"), $binDoc)
 	  )
 
+  let $dataItemCount := fn:count($userDataDoc/tax:userData/tax:feed/tax:dnames/tax:dname/tax:value)
+
   let $response :=
     element { "response" }
     {
       element { "input" }
       {
-        element { "uri" }  { $uri }
+        element { "tenplate" }  { $uri },
+        element { "dataItemCount" }  { $dataItemCount }
       },
       element { "status" }
       {
