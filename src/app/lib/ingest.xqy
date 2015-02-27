@@ -32,6 +32,21 @@ declare variable $OPTIONS as element () :=
                  </options>;
 
 (:~
+ : Centralized Logging
+ :
+ : @param $file
+ : @param $message
+ :)
+declare function ingest:log($file as xs:string, $level as xs:string, $message as xs:string)
+{
+  let $idateTime := xs:string(fn:current-dateTime())
+  let $dateTime  := fn:substring($idateTime, 1, fn:string-length($idateTime)-6)
+
+  return
+    xdmp:log(fn:concat("1..... LOGGING $file: ", $file, " | dateTime: ", $dateTime, " | level: ", $level, " | message: ", $message))
+};
+
+(:~
  : Iterate the network directory where the spreadsheet files (xslx files) reside.
  : Traverses the network directory recursively.
  :
@@ -600,10 +615,10 @@ declare function ingest:generateFileUriOrig($user as xs:string, $fileName as xs:
  :
  : @param $cell
  :)
-declare function ingest:generateTemplateFileUri($fileName as xs:string)
+declare function ingest:generateTemplateFileUri($client as xs:string, $fileName as xs:string)
 {
   let $newFileName     := fn:tokenize($fileName, "/")[fn:last()]
-  let $templateDirName := "/template/"||fn:tokenize($newFileName, "\.")[1]
+  let $templateDirName := "/client/"||$client||"/template/"||fn:tokenize($newFileName, "\.")[1]
   
   return $templateDirName
 };
@@ -761,6 +776,7 @@ declare function ingest:expandDoc($doc as node(), $table as map:map)
  : @param $zipfile
  :)
 declare function ingest:extractSpreadsheetData(
+  $client as xs:string,
   $userFullName as xs:string,
   $user as xs:string,
   $excelFile as xs:string,
@@ -924,14 +940,17 @@ declare function ingest:extractSpreadsheetData(
             return $i
       }
 
+  let $templateId := xdmp:hash64($workSheets)
+
   let $doc :=
     element { fn:QName($NS, "workbook") }
     {
       element { fn:QName($NS, "meta") }
       {
         element { fn:QName($NS, "type") }           { "workbook" },
+        element { fn:QName($NS, "client") }         { $client },
+        element { fn:QName($NS, "templateId") }     { $templateId },
         element { fn:QName($NS, "user") }           { $userFullName },
-        element { fn:QName($NS, "client") }         { "Thomson Reuters" },
         element { fn:QName($NS, "creator") }        { map:get($table, "docProps/core.xml")/core:coreProperties/dc:creator/text() },
         element { fn:QName($NS, "file") }           { $fileUri },
         element { fn:QName($NS, "lastModifiedBy") } { map:get($table, "docProps/core.xml")/core:coreProperties/core:lastModifiedBy/text() },

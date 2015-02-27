@@ -33,11 +33,23 @@ function tr:get(
   let $contentDisposition := xdmp:add-response-header("Content-Disposition", 'attachment; filename="workpaper.xlsx"')
   let $responseCode       := xdmp:set-response-code(300, "OK")
   
-  let $uri :=
+  let $tempUri :=
     if (fn:empty(map:get($params, "uri"))) then
       ""
     else
       map:get($params, "uri")
+
+  let $id :=
+    if (fn:empty(map:get($params, "id"))) then
+      ""
+    else
+      map:get($params, "id")
+
+  let $uri :=
+    if (fn:string-length($id) gt 0) then
+      "/user/janedoe0041/"||$id||".xml"
+    else
+      $tempUri
 
   let $txid :=
     if (fn:empty(map:get($params, "txid"))) then
@@ -57,35 +69,6 @@ function tr:get(
         element error { $e/error:message }
       }
     }
-
-(:
-  let $q   := map:get($params, "q")
-  let $uri :=
-    if (fn:empty(map:get($params, "uri"))) then
-      ""
-    else
-      map:get($params, "uri")
-
-  let $response :=
-    element { "response" }
-    {
-      element { "input" }
-      {
-        element { "uri" }  { $uri }
-      },
-      element { "status" }
-      {
-        element { "elapsedTime" } { xdmp:elapsed-time() },
-        element { "status" } { "Workpaper GET called" }
-      }
-    }
-
-  return
-    document
-    {
-      $response
-    }
-:)
 };
 
 (:

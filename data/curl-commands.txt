@@ -67,3 +67,15 @@ curl --anyauth --user grusso:password -o test2.xlsx -X GET \
     -r "0-511999" \
     http://glm-ml-dev.amers1.cis.trcloud:8010/v1/resources/wpaper?rs:uri=%2Fuser%2Fjanedoe0041%2F16203518717348679863.xml
 
+>>>>
+
+curl --anyauth --user grusso:password -X GET \
+    -H "Accept: application/xml" \
+    http://glm-ml-dev.amers1.cis.trcloud:8010/v1/resources/template?rs:id=2723519433344226522
+
+    
+
+
+
+
+

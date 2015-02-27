@@ -82,6 +82,13 @@ declare variable $c:REST-SEARCH-OPTIONS :=
         <facet-option>limit=10</facet-option>
       </range>
     </constraint>
+    <constraint name="client">
+      <range type="xs:string">
+        <element ns="http://tax.thomsonreuters.com" name="client"/>
+        <facet-option>descending</facet-option>
+        <facet-option>limit=10</facet-option>
+      </range>
+    </constraint>
     <constraint name="users">
       <range type="xs:string">
         <element ns="http://tax.thomsonreuters.com" name="user"/>
@@ -137,10 +144,17 @@ declare variable $c:SEARCH-OPTIONS :=
     <term>
       <term-option>case-insensitive</term-option>
     </term>
-    <additional-query>{cts:and-query(cts:collection-query(("RESTful", "customer", "order", "origin", "spreadsheet", "userdata")))}</additional-query>
+    <additional-query>{cts:collection-query(("RESTful", "customer", "order", "origin", "spreadsheet", "userdata"))}</additional-query>
     <constraint name="types">
       <range type="xs:string">
         <element ns="http://tax.thomsonreuters.com" name="type"/>
+        <facet-option>descending</facet-option>
+        <facet-option>limit=10</facet-option>
+      </range>
+    </constraint>
+    <constraint name="client">
+      <range type="xs:string">
+        <element ns="http://tax.thomsonreuters.com" name="client"/>
         <facet-option>descending</facet-option>
         <facet-option>limit=10</facet-option>
       </range>
@@ -169,6 +183,11 @@ declare variable $c:SEARCH-OPTIONS :=
     <constraint name="id">
       <word>
         <element ns="http://tax.thomsonreuters.com" name="id"/>
+      </word>
+    </constraint>
+    <constraint name="templateId">
+      <word>
+        <element ns="http://tax.thomsonreuters.com" name="templateId"/>
       </word>
     </constraint>
     <constraint name="type">

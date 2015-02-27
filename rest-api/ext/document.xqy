@@ -2,6 +2,8 @@ xquery version "1.0-ml";
 
 module namespace tr = "http://marklogic.com/rest-api/resource/document";
 
+import module namespace ingest = "http://marklogic.com/roxy/lib/ingest" at "/app/lib/ingest.xqy";
+
 declare namespace roxy = "http://marklogic.com/roxy";
 
 declare namespace tax = "http://tax.thomsonreuters.com";
@@ -14,21 +16,6 @@ declare variable $TIDY-OPTIONS as element () :=
                  <options xmlns="xdmp:tidy">
                    <input-xml>yes</input-xml>
                  </options>;
-
-(:~
- : Centralized Logging
- :
- : @param $file
- : @param $message
- :)
-declare function tr:log($file as xs:string, $level as xs:string, $message as xs:string)
-{
-  let $idateTime := xs:string(fn:current-dateTime())
-  let $dateTime  := fn:substring($idateTime, 1, fn:string-length($idateTime)-6)
-
-  return
-    xdmp:log(fn:concat("1..... LOGGING $file: ", $file, " | dateTime: ", $dateTime, " | level: ", $level, " | message: ", $message))
-};
 
 (:~
  : Get Document Helper Function
@@ -160,14 +147,14 @@ function tr:put(
         		  </options>
             )
           ),
-          tr:log($uri, "INFO", fn:concat("INFO: Document was updated: ", $uri)),
+          ingest:log($uri, "INFO", fn:concat("INFO: Document was updated: ", $uri)),
           document {
             <status>{fn:concat("Update Success: ", $uri)}</status>
           }
         }
         catch ($e)
         {
-          tr:log($uri, "ERROR", $e/error:message/text())
+          ingest:log($uri, "ERROR", $e/error:message/text())
         }
         else
           document {
@@ -205,12 +192,12 @@ function tr:post(
   
   let $uri := fn:concat($dir, xdmp:hash64($doc), xdmp:random(), ".xml")
 
-  let $log := tr:log($uri, "INFO", "--------------"||$uri)
+  let $log := ingest:log($uri, "INFO", "--------------"||$uri)
   
   (: Add createdAt and updatedAt code :)
-  let $log := tr:log($uri, "INFO createdAt", "--------------"||$doc//*:createdAt/text())
-  let $log := tr:log($uri, "INFO updatedAt", "--------------"||$doc//*:updatedAt/text())
-  let $log := tr:log($longTxId, "INFO $txId", "--------------"||$longTxId)
+  let $log := ingest:log($uri, "INFO createdAt", "--------------"||$doc//*:createdAt/text())
+  let $log := ingest:log($uri, "INFO updatedAt", "--------------"||$doc//*:updatedAt/text())
+  let $log := ingest:log($longTxId, "INFO $txId", "--------------"||$longTxId)
   
   (: let $__ := xdmp:node-replace($doc//*:updatedAt, ) :)
 
@@ -240,14 +227,14 @@ function tr:post(
         		  </options>
             )
           ),
-          tr:log($uri, "INFO", fn:concat("INFO: Document was updated: ", $uri)),
+          ingest:log($uri, "INFO", fn:concat("INFO: Document was updated: ", $uri)),
           document {
             <status>{fn:concat("Update Success: ", $uri)}</status>
           }
         }
         catch ($e)
         {
-          tr:log($uri, "ERROR", $e/error:message/text())
+          ingest:log($uri, "ERROR", $e/error:message/text())
         }
         else
           document {
@@ -278,13 +265,13 @@ function tr:delete(
       try
       {
         xdmp:document-delete($uri),
-        tr:log($uri, "INFO", fn:concat("INFO: Document was deleted: ", $uri)),
+        ingest:log($uri, "INFO", fn:concat("INFO: Document was deleted: ", $uri)),
         document {
           <status>{fn:concat("Delete Success: ", $uri)}</status>
         }
       }
       catch ($e)
       {
-        tr:log($uri, "ERROR", $e/error:message/text())
+        ingest:log($uri, "ERROR", $e/error:message/text())
       }
 };

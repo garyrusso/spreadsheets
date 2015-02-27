@@ -148,7 +148,7 @@
       <word-positions>true</word-positions>
       <fast-phrase-searches>true</fast-phrase-searches>
       <fast-reverse-searches>false</fast-reverse-searches>
-      <triple-index>false</triple-index>
+      <triple-index>true</triple-index>
       <triple-positions>false</triple-positions>
       <fast-case-sensitive-searches>true</fast-case-sensitive-searches>
       <fast-diacritic-sensitive-searches>true</fast-diacritic-sensitive-searches>
