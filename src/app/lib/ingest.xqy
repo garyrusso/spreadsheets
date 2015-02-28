@@ -779,11 +779,10 @@ declare function ingest:extractSpreadsheetData(
   $client as xs:string,
   $userFullName as xs:string,
   $user as xs:string,
-  $excelFile as xs:string,
-  $fileUri as xs:string)
+  $fileUri as xs:string,
+  $origTemplateId as xs:string,
+  $binFile as node()*)
 {
-  let $binFile  := xdmp:document-get($excelFile)
-
   let $exclude :=
   (
     "[Content_Types].xml", "docProps/app.xml", "xl/theme/theme1.xml", "xl/styles.xml", "_rels/.rels",
@@ -940,7 +939,11 @@ declare function ingest:extractSpreadsheetData(
             return $i
       }
 
-  let $templateId := xdmp:hash64($workSheets)
+  let $templateId :=
+    if (fn:string-length($origTemplateId) gt 0) then
+      $origTemplateId
+    else
+      xdmp:hash64($workSheets)
 
   let $doc :=
     element { fn:QName($NS, "workbook") }
