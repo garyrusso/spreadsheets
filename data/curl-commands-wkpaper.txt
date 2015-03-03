@@ -32,7 +32,16 @@ curl --anyauth --user grusso:password -o userWorkpaper991.xlsx -X GET \
 
 curl --anyauth --user grusso:password -o userWorkpaper992.xlsx -X GET \
     -H "Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" \
-    http://glm-ml-dev.amers1.cis.trcloud:8010/v1/resources/wpaper?rs:id=11612747768457514675
+    http://glm-ml-dev.amers1.cis.trcloud:8010/v1/resources/wpaper?rs:id=8708286384647449580
+
+curl --anyauth --user grusso:password -o userWorkpaper993.xlsx -X GET \
+    -H "Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" \
+    http://glm-ml-dev.amers1.cis.trcloud:8010/v1/resources/wpaper?rs:id=31989285604312239
+
+curl --anyauth --user grusso:password -o userWorkpaper994.xlsx -X GET \
+    -H "Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" \
+    http://glm-ml-dev.amers1.cis.trcloud:8010/v1/resources/wpaper?rs:id=1347952947579322912
+
 
 
 3. GET User Data Only (No Merge) using Custom REST API:
@@ -71,4 +80,23 @@ curl --anyauth --user grusso:password -o test1.xlsx -X GET \
     -r "0-511999" \
     http://glm-ml-dev.amers1.cis.trcloud:8015/v1/documents?uri=%2Ftemplate%2FC2903000%2Fbin%2FC2903000.xlsx
 
+
+>>>>
+
+REST APIs - spreadsheet data merge
+
+  Template, userData merge
+  stubbed out multi-client
+  Search Portal
+  
+  curl commands document
+  API Spec
+  
+  OAuth Token
+  EY Workpaper Generator
+
+
+Analytics - Trend Analysis
+  Ontology
+  Metadata Store
 

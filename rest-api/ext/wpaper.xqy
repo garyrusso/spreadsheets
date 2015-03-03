@@ -17,6 +17,22 @@ declare option xdmp:mapping "false";
 
 (:
  :)
+declare function tr:getNodeUri($result as item()*)
+{
+  if (xs:string(xdmp:type($result)) eq "string") then "not a node"
+  else
+    try {
+      xdmp:node-uri($result)
+    }
+    catch ($err)
+    {
+      (: xdmp:type($result) :)
+      "not a node"
+    }
+};
+
+(:
+ :)
 declare function tr:formatResults($results as document-node()*)
 {
   let $doc :=
@@ -29,13 +45,26 @@ declare function tr:formatResults($results as document-node()*)
           {
             element { "id" }          { $result/tax:userData/tax:meta/tax:userDataId/text() },
             element { "templateId" }  { $result/tax:userData/tax:meta/tax:templateId/text() },
-            element { "dataUri" }     { xdmp:node-uri($result) },
+            element { "dataUri" }     { tr:getNodeUri($result) },
             element { "templateUri" } { $result/tax:userData/tax:meta/tax:templateUri/text() },
             element { "user" }        { $result/tax:userData/tax:meta/tax:user/text() }
           }
     }
 
   return $doc
+};
+
+declare function tr:getUserDataDoc($client as xs:string, $userDataId as xs:string)
+{
+  let $query := cts:and-query((
+                  cts:collection-query(("userdata")),
+                  cts:element-value-query(fn:QName($NS, "userDataId"), $userDataId)
+                ))
+                
+  let $results := cts:search(fn:doc(), $query)
+  
+  return
+    $results[1]
 };
 
 (:
@@ -48,13 +77,22 @@ declare function tr:getTemplateUri($client as xs:string, $id as xs:string)
                 ))
                 
   let $results := cts:search(fn:doc(), $query)
-  
-  return
-    element { "templateInfo" }
-    {
-      element { "binFileUri" } { $results[1]/tax:workbook/tax:meta/tax:file/text() },
-      element { "metadataUri" } { xdmp:node-uri($results[1]) }
-    }
+ 
+  let $doc :=
+    if (fn:count($results) gt 0) then
+      element { "templateInfo" }
+      {
+        element { "binFileUri" } { $results[1]/tax:workbook/tax:meta/tax:file/text() },
+        element { "metadataUri" } { tr:getNodeUri($results[1]) }
+      }
+    else
+      element { "templateInfo" }
+      {
+        element { "binFileUri" } { "Template File does not exist" },
+        element { "metadataUri" } { "Template Metadata File does not exist" }
+      }
+
+  return $doc
 };
 
 (:
@@ -94,13 +132,22 @@ declare function tr:getUserDataById($client as xs:string, $id as xs:string)
                 ))
                 
   let $results := cts:search(fn:doc(), $query)
-  
-  return
-    element { "userDataInfo" }
-    {
-      element { "binFileUri" } { $results[1]/tax:userData/tax:meta/tax:templateFile/text() },
-      element { "uri" } { xdmp:node-uri($results[1]) }
-    }
+
+  let $doc :=
+    if (fn:count($results) gt 0) then
+      element { "userDataInfo" }
+      {
+        element { "binFileUri" } { $results[1]/tax:userData/tax:meta/tax:templateFile/text() },
+        element { "uri" }        { tr:getNodeUri($results[1]) }
+      }
+    else
+      element { "userDataInfo" }
+      {
+        element { "binFileUri" } { "User Data Doc does not exist" },
+        element { "uri" }        { "User Data Doc does not exist" }
+      }
+
+  return $doc
 };
 
 declare function tr:getUserFullName($client as xs:string, $user as xs:string)
@@ -114,10 +161,10 @@ declare function tr:getUserFullName($client as xs:string, $user as xs:string)
   return $userFullName
 };
 
-declare function tr:createUserDataDoc($client as xs:string, $user as xs:string, $templateId as xs:string, $dnames as item()*)
+declare function tr:createUserDataDoc($client as xs:string, $user as xs:string, $templateId as xs:string, $origUserDataID as xs:string, $dnames as item()*)
 {
   let $templateUri := tr:getTemplateUri($client, $templateId)/metadataUri/text()
-
+  
   let $doc :=
     element { fn:QName($NS, "userData") }
     {
@@ -126,10 +173,10 @@ declare function tr:createUserDataDoc($client as xs:string, $user as xs:string, 
         element { fn:QName($NS, "type") }        { "user data" },
         element { fn:QName($NS, "client") }      { $client },
         element { fn:QName($NS, "user") }        { tr:getUserFullName($client, $user) },
-        element { fn:QName($NS, "userDataId") }  { "pending" },
+        element { fn:QName($NS, "userDataId") }  { $origUserDataID },
         element { fn:QName($NS, "templateId") }  { $templateId },
         element { fn:QName($NS, "templateUri") } { $templateUri },
-        element { fn:QName($NS, "modified") }    { "2015-10-08T18:21:48Z" }
+        element { fn:QName($NS, "modified") }    { fn:current-dateTime() }
       },
       element { fn:QName($NS, "feed") }
       {
@@ -146,8 +193,12 @@ declare function tr:createUserDataDoc($client as xs:string, $user as xs:string, 
       }
     }
 
-  let $userDataId := xdmp:hash64($doc)
-  
+  let $userDataId :=
+    if (fn:string-length($origUserDataID) gt 0) then
+      $origUserDataID
+    else
+      xdmp:hash64($doc)
+
   let $newUserDataIdNode  := element {fn:QName($NS, "userDataId")} { $userDataId }
   
   let $newDoc := mem:node-replace($doc/tax:meta/tax:userDataId, $newUserDataIdNode)
@@ -206,7 +257,7 @@ function tr:get(
   let $log := xdmp:log("2 ----- User Workpaper Id:  "||$id)
 
   let $binDoc :=
-    if (fn:string-length($id) gt 0) then
+    if ((fn:string-length($id) gt 0) and (fn:not(fn:contains($uri, "does not exist")))) then
     (
       if (fn:lower-case($merge) eq "false") then
         fn:doc($uri)
@@ -240,24 +291,67 @@ function tr:put(
 {
   let $output-types := map:put($context,"output-types","application/xml")
 
-  let $userDataDoc :=  document { $input }
+  (: GR001 - Get client and user id from token :)
+  let $client := "ey001"
+  let $user   := "janedoe0041"
 
-  let $uri :=
-    if (fn:empty(map:get($params, "uri"))) then
-      ""
+  let $dataId :=
+    if (fn:not(fn:empty(map:get($params, "dataid")))) then
+      map:get($params, "dataid")
     else
-      map:get($params, "uri")
-      
-  let $txid :=
-    if (fn:empty(map:get($params, "txid"))) then
-      ""
+    if (fn:not(fn:empty(map:get($params, "dataId")))) then
+      map:get($params, "dataId")
     else
-      map:get($params, "txid")
+      ""
+
+  let $jUserDataDoc :=  document { $input }
+
+  (: Convert json to xml :)
+  let $userDataDoc  := json:transform-from-json($jUserDataDoc)
+
+  (: GR001 - get Template Id :)
+  let $origUserDataDoc := tr:getUserDataDoc($client, $dataId)
+  
+  let $templateId :=
+    if (fn:count($origUserDataDoc) gt 0) then
+      $origUserDataDoc/tax:userData/tax:meta/tax:templateId/text()
+    else
+      "no template id"
+
+  let $log := xdmp:log("1 ----- $dataId:     "||$dataId)
+  let $log := xdmp:log("2 ----- $templateId: "||$templateId)
+
+  let $docNew := tr:createUserDataDoc($client, $user, $templateId, $dataId, $userDataDoc)
+
+  let $uri  := "/client/"||$client||"/user/"||$user||"/"||$docNew/tax:meta/tax:userDataId/text()||".xml"
+
+  let $__ := xdmp:node-replace($origUserDataDoc/tax:userData, $docNew)
+
+  let $dataItemCount := fn:count($userDataDoc/*:dnames/*:json)
+
+  let $response :=
+    element { "response" }
+    {
+      element { "input" }
+      {
+        element { "dataItemCount" }  { $dataItemCount }
+      },
+      element { "status" }
+      {
+        element { "elapsedTime" } { xdmp:elapsed-time() },
+        element { "client" }      { $client },
+        element { "user" }        { $user },
+        element { "userDataId" }  { $dataId },
+        element { "userDataUri" } { $uri },
+        element { "templateId" }  { $templateId },
+        element { "templateUri" } { $docNew/tax:meta/tax:templateUri/text() }
+      }
+    }
 
   return
     document
     {
-      $userDataDoc
+      $response
     }
 };
 
@@ -276,19 +370,18 @@ function tr:post(
   (: GR001 - Get client and user id from token :)
   let $client := "ey001"
   let $user   := "janedoe0041"
-
-  let $id          := map:get($params, "templateId")
+  let $templateId     := map:get($params, "templateId")
   
   let $jUserDataDoc :=  document { $input }
 
   (: Convert json to xml :)
   let $userDataDoc  := json:transform-from-json($jUserDataDoc)
   
-  let $doc := tr:createUserDataDoc($client, $user, $id, $userDataDoc)
+  let $doc := tr:createUserDataDoc($client, $user, $templateId, "", $userDataDoc)
 
   let $log := xdmp:log("1 ----- userDataId: "||$doc/tax:meta/tax:userDataId/text())
 
-  let $uri  := "/client/"||$client||"/user/"||$user||"/"||$doc/tax:meta/tax:userDataId/text()||".xml"
+  let $uri  := "/client/"||$client||"/user/"||$doc/tax:meta/tax:userDataId/text()||".xml"
 
   let $evalCmd :=
     fn:concat
@@ -318,8 +411,9 @@ function tr:post(
         element { "elapsedTime" } { xdmp:elapsed-time() },
         element { "client" }      { $client },
         element { "user" }        { $user },
-        element { "id" }          { $id },
+        element { "templateId" }  { $templateId },
         element { "templateUri" } { $doc/tax:meta/tax:templateUri/text() },
+        element { "userDataId" }  { $doc/tax:meta/tax:userDataId/text() },
         element { "userDataUri" } { $uri }
       }
     }
@@ -356,7 +450,11 @@ function tr:delete(
 
   let $uri := tr:getUserDataById($client, $id)/uri/text()
   
-  let $__ := xdmp:document-delete($uri)
+  let $__ :=
+    if (fn:contains($uri, "does not exist")) then
+      ()
+    else
+      xdmp:document-delete($uri)
 
   let $response :=
     element { "response" }
@@ -369,7 +467,7 @@ function tr:delete(
       {
         element { "elapsedTime" } { xdmp:elapsed-time() },
         element { "status" }      { $status },
-        element { "uri" } { $uri }
+        element { "uri" }        { $uri }
       }
     }
 

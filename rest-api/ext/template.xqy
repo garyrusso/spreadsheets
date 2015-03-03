@@ -26,12 +26,21 @@ declare function tr:getTemplateUri($client as xs:string, $id as xs:string)
                 
   let $results := cts:search(fn:doc(), $query)
   
-  return
-    element { "templateInfo" }
-    {
-      element { "binFileUri" } { $results[1]/tax:workbook/tax:meta/tax:file/text() },
-      element { "metadataUri" } { xdmp:node-uri($results[1]) }
-    }
+  let $doc :=
+    if (fn:count($results) gt 0) then
+      element { "templateInfo" }
+      {
+        element { "binFileUri" } { $results[1]/tax:workbook/tax:meta/tax:file/text() },
+        element { "metadataUri" } { xdmp:node-uri($results[1]) }
+      }
+    else
+      element { "templateInfo" }
+      {
+        element { "binFileUri" } { "Template File does not exist" },
+        element { "metadataUri" } { "Template Metadata File does not exist" }
+      }
+
+  return $doc
 };
 
 (:
@@ -231,54 +240,65 @@ function tr:post(
   let $user         := "janedoe"||$userPadNum
   let $userFullName := "Jane Doe "||$userNum
 
-  let $binDoc :=  document { $input }
-
-  let $templateDir         := "/client/"||$client||"/template"
-  
-  let $templateBinFileName  :=
-    if (fn:string-length($filename) gt 0) then
-      $filename
-    else
-      xdmp:hash64($templateDir)
-
-  let $templateMetadataDir := $templateDir||"/"||$templateBinFileName
-
-  let $templateMetadataUri := $templateMetadataDir||"/"||$templateBinFileName||".xml"
-  let $templateBinFileUri  := $templateMetadataDir||"/"||$templateBinFileName||".xlsx"
-
-  let $doc                 := ingest:extractSpreadsheetData($client, $userFullName, $user, $templateBinFileUri, "", $binDoc)
-
-  let $evalCmd :=
-    fn:concat
-    (
-      'declare variable $metaUri external;
-       declare variable $doc external;
-       declare variable $uri external;
-       declare variable $binDoc external;
-       xdmp:document-insert($metaUri, $doc, xdmp:default-permissions(), ("spreadsheet")),
-       xdmp:document-insert($uri, $binDoc, xdmp:default-permissions(), ("binary"))'
-    )
-
-  let $evalDoc :=
-    xdmp:eval(
-      $evalCmd,
-      (xs:QName("metaUri"), $templateMetadataUri, xs:QName("doc"), $doc, xs:QName("uri"), $templateBinFileUri, xs:QName("binDoc"), $binDoc)
-    )
+  let $binDoc := document { $input }
 
   let $response :=
-    element { "response" }
-    {
-      element { "input" }
-      {
-        element { "dnameCount" } { fn:count($doc/tax:feed/tax:definedNames/tax:definedName) }
-      },
-      element { "status" }
-      {
-        element { "elapsedTime" }         { xdmp:elapsed-time() },
-        element { "templateBinFileUri" }  { $templateBinFileUri },
-        element { "templateMetadataUri" } { $templateMetadataUri }
-      }
-    }
+    (: if (xdmp:binary-size($binDoc/binary()) gt 100) then :)
+    if (fn:string-length(xs:string($binDoc)) eq 0) then
+    (
+      element { "status" } { "no payload" }
+    )
+    else
+    (
+      let $templateDir         := "/client/"||$client||"/template"
+      
+      let $templateBinFileName  :=
+        if (fn:string-length($filename) gt 0) then
+          $filename
+        else
+          xdmp:hash64($templateDir)
+    
+      let $templateMetadataDir := $templateDir||"/"||$templateBinFileName
+    
+      let $templateMetadataUri := $templateMetadataDir||"/"||$templateBinFileName||".xml"
+      let $templateBinFileUri  := $templateMetadataDir||"/"||$templateBinFileName||".xlsx"
+    
+      let $doc                 := ingest:extractSpreadsheetData($client, $userFullName, $user, $templateBinFileUri, "", $binDoc)
+    
+      let $evalCmd :=
+        fn:concat
+        (
+          'declare variable $metaUri external;
+           declare variable $doc external;
+           declare variable $uri external;
+           declare variable $binDoc external;
+           xdmp:document-insert($metaUri, $doc, xdmp:default-permissions(), ("spreadsheet")),
+           xdmp:document-insert($uri, $binDoc, xdmp:default-permissions(), ("binary"))'
+        )
+    
+      let $evalDoc :=
+        xdmp:eval(
+          $evalCmd,
+          (xs:QName("metaUri"), $templateMetadataUri, xs:QName("doc"), $doc, xs:QName("uri"), $templateBinFileUri, xs:QName("binDoc"), $binDoc)
+        )
+        
+      let $doc :=
+        element { "response" }
+        {
+          element { "input" }
+          {
+            element { "dnameCount" } { fn:count($doc/tax:feed/tax:definedNames/tax:definedName) }
+          },
+          element { "status" }
+          {
+            element { "elapsedTime" }         { xdmp:elapsed-time() },
+            element { "templateBinFileUri" }  { $templateBinFileUri },
+            element { "templateMetadataUri" } { $templateMetadataUri }
+          }
+        }
+        
+      return $doc
+    )
 
   return
     document
@@ -315,7 +335,14 @@ function tr:delete(
   
   let $templateDir := fn:substring-before($templateMetadataUri, fn:tokenize($templateMetadataUri, "/")[fn:last()])
   
-  let $__ := xdmp:directory-delete($templateDir)
+  let $log := xdmp:log("777 -------- $templateMetadataUri: "||$templateMetadataUri)
+  let $log := xdmp:log("777 -------- $templateDir:         "||$templateDir)
+
+  let $__ :=
+    if (fn:contains($templateMetadataUri, "does not exist")) then
+      ()
+    else
+      xdmp:directory-delete($templateDir)
 
   let $response :=
     element { "response" }
