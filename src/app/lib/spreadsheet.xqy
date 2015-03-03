@@ -378,17 +378,7 @@ declare function ssheet:createSpreadsheetFileAndApplyUserData($excelUri as xs:st
 
 declare function ssheet:createSpreadsheetFile($userData as node())
 {
-(:
-  let $excelUri1 := $userData/../../tax:meta/tax:templateFile/text()
-  let $excelUri2 := $userData/tax:userData/tax:meta/tax:templateFile/text()
-
-  let $excelUri :=
-    if (fn:string-length($excelUri1) gt 0) then
-      $excelUri1
-    else
-      $excelUri2
-:)
-  let $excelUri := $userData/tax:userData/tax:meta/tax:templateFile/text()
+  let $excelUri := fn:doc($userData/tax:userData/tax:meta/tax:templateUri/text())/tax:workbook/tax:meta/tax:file/text()
 
   let $log := xdmp:log("1 ----- excelUri: "||$excelUri)
 

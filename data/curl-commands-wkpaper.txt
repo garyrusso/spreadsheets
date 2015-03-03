@@ -1,0 +1,74 @@
+1. GET Template Files using Standard REST API:
+
+/client/ey001/template/C2903000/C2903000.xml
+
+curl --anyauth --user grusso:password -o test999.xml -X GET \
+    -H "Accept: application/xml" \
+    http://glm-ml-dev.amers1.cis.trcloud:8015/v1/documents?uri=%2Fclient%2Fey001%2Ftemplate%2FC2903000%2FC2903000.xml
+
+
+/client/ey001/template/C2903000/C2903000.xlsx
+
+curl --anyauth --user grusso:password -o test999.xlsx -X GET \
+    -H "Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" \
+    -r "0-511999" \
+    http://glm-ml-dev.amers1.cis.trcloud:8015/v1/documents?uri=%2Fclient%2Fey001%2Ftemplate%2FC2903000%2FC2903000.xlsx
+
+
+1. GET User Data using Standard REST API:
+
+/client/ey001/user/janedoe0041/11612747768457514675.xml
+
+curl --anyauth --user grusso:password -o userData999a.xml -X GET \
+    -H "Accept: application/xml" \
+    http://glm-ml-dev.amers1.cis.trcloud:8015/v1/documents?uri=%2Fclient%2Fey001%2Fuser%2Fjanedoe0041%2F11612747768457514675.xml
+
+
+2. GET User Data Merge using Custom REST API:
+
+curl --anyauth --user grusso:password -o userWorkpaper991.xlsx -X GET \
+    -H "Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" \
+    http://glm-ml-dev.amers1.cis.trcloud:8010/v1/resources/wpaper?rs:uri=%2Fclient%2Fey001%2Fuser%2Fjanedoe0041%2F11612747768457514675.xml
+
+curl --anyauth --user grusso:password -o userWorkpaper992.xlsx -X GET \
+    -H "Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" \
+    http://glm-ml-dev.amers1.cis.trcloud:8010/v1/resources/wpaper?rs:id=11612747768457514675
+
+
+3. GET User Data Only (No Merge) using Custom REST API:
+
+curl --anyauth --user grusso:password -o userWorkpaper992.xlsx -X GET \
+    -H "Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" \
+    http://glm-ml-dev.amers1.cis.trcloud:8010/v1/resources/wpaper?rs:id=11612747768457514675&rs:merge=false
+
+
+4. GET User Data List using Custom REST API:
+
+curl --anyauth --user grusso:password -X GET \
+    -H "Accept: application/xml" \
+    http://glm-ml-dev.amers1.cis.trcloud:8010/v1/resources/wpaper
+
+
+5. POST User Data using Custom REST API:
+
+
+
+
+
+6. DELETE User Data Merge using Custom REST API:
+
+curl --anyauth --user grusso:password -o userWorkpaper992.xlsx -X DELETE \
+    -H "Accept: application/xml" \
+    http://glm-ml-dev.amers1.cis.trcloud:8010/v1/resources/wpaper?rs:id=11612747768457514675
+
+
+
+
+>>>>>
+
+curl --anyauth --user grusso:password -o test1.xlsx -X GET \
+    -H "Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" \
+    -r "0-511999" \
+    http://glm-ml-dev.amers1.cis.trcloud:8015/v1/documents?uri=%2Ftemplate%2FC2903000%2Fbin%2FC2903000.xlsx
+
+

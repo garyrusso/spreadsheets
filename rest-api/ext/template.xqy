@@ -39,7 +39,7 @@ declare function tr:getTemplateUri($client as xs:string, $id as xs:string)
 declare function tr:formatResults($results as document-node()*)
 {
   let $doc :=
-    element { "templates" }
+    element { "list" }
     {
       element { "count" } { fn:count($results/tax:workbook) },
       for $result in $results
@@ -85,7 +85,7 @@ declare function tr:getTemplateListByClient($client as xs:string)
 
 (:
  :)
-declare function tr:getTemplateListUsingSearch($q as xs:string, $client as xs:string)
+declare function tr:searchTemplates($q as xs:string, $client as xs:string)
 {
   let $query := cts:and-query((
                   cts:collection-query(("spreadsheet")),
@@ -124,7 +124,7 @@ function tr:get(
 
   let $returnDoc :=
     if (fn:string-length($q) gt 0) then
-      tr:getTemplateListUsingSearch($q, $client)
+      tr:searchTemplates($q, $client)
     else
     if (fn:string-length($id) gt 0) then
     (
@@ -184,25 +184,6 @@ function tr:put(
   let $__ := xdmp:node-replace($docOrig/tax:workbook, $docNew)
   let $__ := xdmp:node-replace($binDocOrig, $binDocNew)
 
-(:
-  let $evalCmd :=
-    fn:concat
-    (
-      'declare variable $metaUri external;
-       declare variable $doc external;
-       declare variable $uri external;
-       declare variable $binDoc external;
-       xdmp:document-insert($metaUri, $doc, xdmp:default-permissions(), ("spreadsheet")),
-       xdmp:document-insert($uri, $binDoc, xdmp:default-permissions(), ("binary"))'
-    )
-
-  let $doc :=
-    xdmp:eval(
-      $evalCmd,
-      (xs:QName("metaUri"), $templateMetadataUri, xs:QName("doc"), $doc, xs:QName("uri"), $templateUri, xs:QName("binDoc"), $binDoc)
-	  )
-:)
-
   let $response :=
     element { "response" }
     {
@@ -253,18 +234,19 @@ function tr:post(
   let $binDoc :=  document { $input }
 
   let $templateDir         := "/client/"||$client||"/template"
-  let $doc                 := ingest:extractSpreadsheetData($client, $userFullName, $user, $templateDir, "", $binDoc)
-
+  
   let $templateBinFileName  :=
     if (fn:string-length($filename) gt 0) then
       $filename
     else
-      xdmp:hash64($doc)
-  
+      xdmp:hash64($templateDir)
+
   let $templateMetadataDir := $templateDir||"/"||$templateBinFileName
 
   let $templateMetadataUri := $templateMetadataDir||"/"||$templateBinFileName||".xml"
-  let $templateBinFileUri  := $templateMetadataDir||"/bin/"||$templateBinFileName||".xlsx"
+  let $templateBinFileUri  := $templateMetadataDir||"/"||$templateBinFileName||".xlsx"
+
+  let $doc                 := ingest:extractSpreadsheetData($client, $userFullName, $user, $templateBinFileUri, "", $binDoc)
 
   let $evalCmd :=
     fn:concat
@@ -314,7 +296,45 @@ function tr:delete(
     $params  as map:map
 ) as document-node()?
 {
-  map:put($context, "output-types", "application/xml"),
-  xdmp:set-response-code(200, "OK"),
-  document { "DELETE called on the ext service extension" }
+  let $contentTypes := xdmp:add-response-header("output-types", 'application/xml')
+  let $responseCode := xdmp:set-response-code(200, "OK")
+
+  let $id := map:get($params, "id")
+  
+  (: Get the client and user info from the OAuth2 token :)
+  let $client := "ey001"
+  
+  let $status :=
+    if (fn:string-length($id) gt 0) then
+      "Deleted Template Id: "||$id
+    else
+      "Invalid Template Id"
+
+  let $templateInfo        := tr:getTemplateUri($client, $id)
+  let $templateMetadataUri := $templateInfo/metadataUri/text()
+  
+  let $templateDir := fn:substring-before($templateMetadataUri, fn:tokenize($templateMetadataUri, "/")[fn:last()])
+  
+  let $__ := xdmp:directory-delete($templateDir)
+
+  let $response :=
+    element { "response" }
+    {
+      element { "input" }
+      {
+        element { "requestId" }  { $id }
+      },
+      element { "status" }
+      {
+        element { "elapsedTime" } { xdmp:elapsed-time() },
+        element { "status" }      { $status },
+        element { "templateDir" } { $templateDir }
+      }
+    }
+
+  return
+    document
+    {
+      $response
+    }
 };

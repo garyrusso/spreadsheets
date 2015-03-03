@@ -1,0 +1,81 @@
+/template test commands
+
+GET Binary by Template ID: 3857790183476763686
+
+curl --anyauth --user grusso:password -o test9.xlsx -X GET \
+    -H "Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" \
+    -r "0-511999" \
+    http://glm-ml-dev.amers1.cis.trcloud:8010/v1/resources/template?rs:id=3857790183476763686
+
+
+GET Binary by Template ID: 8216640002390149622
+
+curl --anyauth --user grusso:password -o test821.xlsx -X GET \
+    -H "Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" \
+    -r "0-511999" \
+    http://glm-ml-dev.amers1.cis.trcloud:8010/v1/resources/template?rs:id=8216640002390149622
+
+
+GET Template List using Search - pagination to be added later
+
+curl --anyauth --user grusso:password -X GET \
+    -H "Accept: application/xml" \
+    http://glm-ml-dev.amers1.cis.trcloud:8010/v1/resources/template?rs:q=1234
+
+
+GET Full Template List - pagination to be added later
+
+curl --anyauth --user grusso:password -X GET \
+    -H "Accept: application/xml" \
+    http://glm-ml-dev.amers1.cis.trcloud:8010/v1/resources/template
+
+curl --anyauth --user grusso:password -X GET \
+    -H "Accept: application/xml" \
+    http://glm-ml-dev.amers1.cis.trcloud:8010/v1/resources/template?rs:q="Beginning Year Amount"
+
+curl --anyauth --user grusso:password -X GET \
+    -H "Accept: application/xml" \
+    http://glm-ml-dev.amers1.cis.trcloud:8010/v1/resources/template?rs:q=3857790183476763686
+
+curl --anyauth --user grusso:password -o test385.xlsx -X GET \
+    -H "Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" \
+    -r "0-511999" \
+    http://glm-ml-dev.amers1.cis.trcloud:8010/v1/resources/template?rs:id=3857790183476763686
+
+curl --anyauth --user grusso:password -o test821v0.xlsx -X GET \
+    -H "Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" \
+    -r "0-511999" \
+    http://glm-ml-dev.amers1.cis.trcloud:8010/v1/resources/template?rs:id=3857790183476763686
+
+PUT Template File
+
+curl -X PUT --data-binary @./test821v1.xlsx \
+    http://glm-ml-dev.amers1.cis.trcloud:8010/v1/resources/template?rs:id=3857790183476763686
+
+
+POST Template File
+
+curl -X POST --data-binary @./C2903000.xlsx \
+    --header "Content-Type:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" \
+    http://glm-ml-dev.amers1.cis.trcloud:8010/v1/resources/template?rs:filename=C2903000
+
+
+curl -X POST --data-binary @./C4903000.xlsx \
+    --header "Content-Type:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" \
+    http://glm-ml-dev.amers1.cis.trcloud:8010/v1/resources/template?rs:filename=C4903000
+
+
+curl -X POST --data-binary @./C5903000.xlsx \
+    --header "Content-Type:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" \
+    http://glm-ml-dev.amers1.cis.trcloud:8010/v1/resources/template?rs:filename=C5903000
+
+
+curl -X POST --data-binary @./C5903000.xlsx \
+    --header "Content-Type:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" \
+    http://glm-ml-dev.amers1.cis.trcloud:8010/v1/resources/template
+
+
+DELETE Template File
+
+curl --anyauth --user grusso:password -X DELETE \
+    http://glm-ml-dev.amers1.cis.trcloud:8010/v1/resources/template?rs:id=3857790183476763686
