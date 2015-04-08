@@ -2,7 +2,7 @@
 
 GET Binary by Template ID: 3857790183476763686
 
-curl --anyauth --user grusso:password -o test9.xlsx -X GET \
+curl --anyauth --user grusso:password -o templateC5903000.xlsx -X GET \
     -H "Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" \
     -r "0-511999" \
     http://glm-ml-dev.amers1.cis.trcloud:8010/v1/resources/template?rs:id=3857790183476763686
@@ -20,7 +20,7 @@ GET Template List using Search - pagination to be added later
 
 curl --anyauth --user grusso:password -X GET \
     -H "Accept: application/xml" \
-    http://glm-ml-dev.amers1.cis.trcloud:8010/v1/resources/template?rs:q=1234
+    http://glm-ml-dev.amers1.cis.trcloud:8010/v1/resources/template?rs:q="Balance Sheet 2014"
 
 
 GET Full Template List - pagination to be added later

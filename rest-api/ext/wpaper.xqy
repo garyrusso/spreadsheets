@@ -370,8 +370,16 @@ function tr:post(
   (: GR001 - Get client and user id from token :)
   let $client := "ey001"
   let $user   := "janedoe0041"
-  let $templateId     := map:get($params, "templateId")
-  
+
+  let $templateId :=
+    if (fn:not(fn:empty(map:get($params, "templateid")))) then
+      map:get($params, "templateid")
+    else
+    if (fn:not(fn:empty(map:get($params, "templateId")))) then
+      map:get($params, "templateId")
+    else
+      ""
+
   let $jUserDataDoc :=  document { $input }
 
   (: Convert json to xml :)
