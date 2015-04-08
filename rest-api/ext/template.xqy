@@ -172,12 +172,14 @@ function tr:put(
 
   let $id := map:get($params, "id")
 
-  (: pull this from the auth token :)
+  (: GR001 - Need to pull the user full name and client id info from the auth token. It's hard coded for now. :)
   let $client       := "ey001"
-  let $userNum      := 42
-  let $userPadNum   := ingest:padNum($userNum)
-  let $user         := "janedoe"||$userPadNum
-  let $userFullName := "Jane Doe "||$userNum
+
+  let $fullName         := ingest:getUserFullName()
+  let $userFullName     := $fullName/firstName/text()||" "||$fullName/lastName/text()
+  let $trimmedFirstName := fn:replace(fn:replace($fullName/firstName/text(), " ", ""), "\.", "")
+  let $trimmedLastName  := fn:replace($fullName/lastName/text(), "'", "")
+  let $user             := fn:lower-case($trimmedFirstName)||fn:lower-case($trimmedLastName)
 
   let $binDocNew    :=  document { $input }
 
@@ -233,12 +235,14 @@ function tr:post(
   let $id       := map:get($params, "id")
   let $filename := map:get($params, "filename")
 
-  (: pull this from the auth token :)
+  (: GR001 - Need to pull the user full name and client id info from the auth token. It's hard coded for now. :)
   let $client       := "ey001"
-  let $userNum      := 42
-  let $userPadNum   := ingest:padNum($userNum)
-  let $user         := "janedoe"||$userPadNum
-  let $userFullName := "Jane Doe "||$userNum
+
+  let $fullName         := ingest:getUserFullName()
+  let $userFullName     := $fullName/firstName/text()||" "||$fullName/lastName/text()
+  let $trimmedFirstName := fn:replace(fn:replace($fullName/firstName/text(), " ", ""), "\.", "")
+  let $trimmedLastName  := fn:replace($fullName/lastName/text(), "'", "")
+  let $user             := fn:lower-case($trimmedFirstName)||fn:lower-case($trimmedLastName)
 
   let $binDoc := document { $input }
 

@@ -473,6 +473,170 @@ declare function ingest:getFilingDate()
     $dates/date[$idx]
 };
 
+declare function ingest:getUserFullName()
+{
+  let $users :=
+      element { "users" }
+      {
+        element { "user" }
+        {
+          element { "firstName" } { "Grace" },
+          element { "lastName" }   { "Hopper" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "Sandra Day" },
+          element { "lastName" }   { "O'Conner" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "Ruth Bader" },
+          element { "lastName" }   { "Ginsberg" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "Sonia" },
+          element { "lastName" }   { "Sotomayor" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "Elena" },
+          element { "lastName" }   { "Kagan" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "Anthony" },
+          element { "lastName" }   { "Kennedy" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "Marissa" },
+          element { "lastName" }   { "Mayer" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "Steve" },
+          element { "lastName" }   { "Jobs" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "Sheryl" },
+          element { "lastName" }   { "Sandberg" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "Elizabeth" },
+          element { "lastName" }   { "Braham" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "Sharlene" },
+          element { "lastName" }  { "Abrams" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "Brenda" },
+          element { "lastName" }  { "Agius" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "Angela" },
+          element { "lastName" }  { "Ahrendts" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "Betty" },
+          element { "lastName" }  { "Alewine" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "DeLisa" },
+          element { "lastName" }  { "Alexander" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "Mala" },
+          element { "lastName" }  { "Anand" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "Jo" },
+          element { "lastName" }  { "Anderson" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "Sheila M." },
+          element { "lastName" }  { "Anderson" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "Vicki L." },
+          element { "lastName" }  { "Andrews" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "Colleen" },
+          element { "lastName" }  { "Arnold" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "Susan L." },
+          element { "lastName" }  { "Amato" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "Fay" },
+          element { "lastName" }  { "Arjomandi" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "Lisa" },
+          element { "lastName" }  { "Arthur" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "Jocelyne" },
+          element { "lastName" }  { "Attal" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "Carolyn V." },
+          element { "lastName" }  { "Aver" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "Elizabeth L." },
+          element { "lastName" }  { "Axelrod" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "Andrea J." },
+          element { "lastName" }  { "Ayers" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "Silvia" },
+          element { "lastName" }  { "Ayyoubi" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "Maggie" },
+          element { "lastName" }  { "Wu" }
+        },
+        element { "user" }
+        {
+          element { "firstName" } { "Peg" },
+          element { "lastName" }  { "Wynn" }
+        }
+      }
+
+  let $random := xdmp:random(29) + 1
+  let $idx    := if ($random eq 0) then 1 else $random
+
+  return
+    $users/user[$idx]
+};
+
 (:~
  : Get Value from Defined Name
  :
@@ -950,7 +1114,7 @@ declare function ingest:extractSpreadsheetData(
     {
       element { fn:QName($NS, "meta") }
       {
-        element { fn:QName($NS, "type") }           { "workbook" },
+        element { fn:QName($NS, "type") }           { "template" },
         element { fn:QName($NS, "client") }         { $client },
         element { fn:QName($NS, "templateId") }     { $templateId },
         element { fn:QName($NS, "user") }           { $userFullName },
@@ -1147,7 +1311,7 @@ declare function ingest:extractGeneratedSpreadsheetData(
     {
       element { fn:QName($NS, "meta") }
       {
-        element { fn:QName($NS, "type") }           { "workbook" },
+        element { fn:QName($NS, "type") }           { "template" },
         element { fn:QName($NS, "user") }           { $userFullName },
         element { fn:QName($NS, "client") }         { "Thomson Reuters" },
         element { fn:QName($NS, "creator") }        { map:get($table, "docProps/core.xml")/core:coreProperties/dc:creator/text() },

@@ -515,7 +515,7 @@ declare function local:extractSpreadsheetData($user as xs:string, $zipFile as xs
     {
       element { fn:QName($NS, "meta") }
       {
-        element { fn:QName($NS, "type") }      { "workbook" },
+        element { fn:QName($NS, "type") }      { "template" },
         element { fn:QName($NS, "user") }      { $user },
         element { fn:QName($NS, "client") }    { "Thomson Reuters" },
         element { fn:QName($NS, "creator") }   { map:get($table, "docProps/core.xml")/core:coreProperties/dc:creator/text() },

@@ -97,8 +97,11 @@ declare function local:transform-snippet($nodes as node()*)
                       <td align="right"><a target="_blank" href="view.xml?uri={$docUri}">Open XML</a></td>
                     </tr>,
                     <tr><td width="145" valign="top">Type</td><td colspan="2" valign="top">{$doc3//tax:meta/tax:type/text()}</td></tr>,
-                    <tr><td width="145" valign="top">User</td><td colspan="2" valign="top">{$doc3/tax:workbook/tax:meta/tax:user/text()}</td></tr>,
-                    <tr><td width="145" valign="top">File URI</td><td colspan="2" valign="top"><a target="_blank" href="view.xlsx?uri={$fileUri}">{$fileUri}</a></td></tr>
+                    <tr><td width="145" valign="top">User</td><td colspan="2" valign="top">{$doc3//tax:meta/tax:user/text()}</td></tr>,
+                    if (fn:starts-with($doc3//tax:meta/tax:type/text(), "template")) then
+                      <tr><td width="145" valign="top">File URI</td><td colspan="2" valign="top"><a target="_blank" href="view.xlsx?uri={$fileUri}">{$fileUri}</a></td></tr>
+                    else
+                      <tr><td width="145" valign="top">Doc URI</td><td colspan="2" valign="top">{$docUri}</td></tr>
                   )
                 }
                 <tr>

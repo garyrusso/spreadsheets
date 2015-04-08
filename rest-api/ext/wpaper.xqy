@@ -150,20 +150,12 @@ declare function tr:getUserDataById($client as xs:string, $id as xs:string)
   return $doc
 };
 
-declare function tr:getUserFullName($client as xs:string, $user as xs:string)
-{
-  let $userNum      := "41"
-  let $userFullName := "Jane Doe "||$userNum
-
-  let $userPadNum   := ingest:padNum(xs:integer($userNum))
-  let $revisedUser  := $user||$userPadNum
-  
-  return $userFullName
-};
-
 declare function tr:createUserDataDoc($client as xs:string, $user as xs:string, $templateId as xs:string, $origUserDataID as xs:string, $dnames as item()*)
 {
   let $templateUri := tr:getTemplateUri($client, $templateId)/metadataUri/text()
+
+  let $fullName         := ingest:getUserFullName()
+  let $userFullName     := $fullName/firstName/text()||" "||$fullName/lastName/text()
   
   let $doc :=
     element { fn:QName($NS, "userData") }
@@ -172,7 +164,7 @@ declare function tr:createUserDataDoc($client as xs:string, $user as xs:string, 
       {
         element { fn:QName($NS, "type") }        { "user data" },
         element { fn:QName($NS, "client") }      { $client },
-        element { fn:QName($NS, "user") }        { tr:getUserFullName($client, $user) },
+        element { fn:QName($NS, "user") }        { $userFullName },
         element { fn:QName($NS, "userDataId") }  { $origUserDataID },
         element { fn:QName($NS, "templateId") }  { $templateId },
         element { fn:QName($NS, "templateUri") } { $templateUri },
