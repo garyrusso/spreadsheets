@@ -46,7 +46,6 @@ function get(context, params) {
   
   return returnDoc;
 
-//  return "Invalid Template Id";
 /*
 return
   try {
@@ -151,9 +150,9 @@ function post(context, params, input) {
   xdmp.log("GR001 - templateMetadataUri: " + templateMetadataUri)
   xdmp.log("GR001 - templateBinFileUri:  " + templateBinFileUri)
   xdmp.log("GR001 - hashedTemplateUri:   " + hashedTemplateUri)
-  xdmp.log("gr001 - userFullName: " + userFullName);
-  xdmp.log("gr001 - user:         " + user);
-  
+  xdmp.log("GR001 - userFullName: " + userFullName);
+  xdmp.log("GR001 - user:         " + user);
+
   doc = ingest.extractSpreadsheetData(client, userFullName, user, templateBinFileUri, "", binDoc);
 
   return doc;
