@@ -11,6 +11,8 @@ xquery version "1.0-ml";
 module namespace ingest = "http://marklogic.com/roxy/lib/ingest";
 
 import module namespace ssheet = "http://marklogic.com/roxy/lib/ssheet" at "/app/lib/spreadsheet.xqy";
+import module namespace json   = "http://marklogic.com/json" at "/roxy/lib/json.xqy";
+(: import module namespace json   = "http://marklogic.com/json" at "/app/roxy/lib/json.xqy"; :)
 
 declare namespace tax  = "http://tax.thomsonreuters.com";
 
@@ -632,9 +634,23 @@ declare function ingest:getUserFullName()
 
   let $random := xdmp:random(29) + 1
   let $idx    := if ($random eq 0) then 1 else $random
-
+  
   return
     $users/user[$idx]
+};
+
+declare function ingest:getUserFullNameJson()
+{
+  let $doc := ingest:getUserFullName()
+  
+  let $jdoc :=
+    json:o((
+      "firstName", $doc/firstName/text(),
+      "lastName", $doc/lastName/text()
+    ))
+  
+  return
+    json:serialize($jdoc)
 };
 
 (:~
