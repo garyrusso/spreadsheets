@@ -12,6 +12,9 @@ var ingest = require("/app/lib/ingest.xqy");
 // - Setting additional response headers
 //
 function get(context, params) {
+
+  xdmp.log('GET invoked');
+
   var results = [];
   context.outputTypes = [];
   
@@ -23,46 +26,32 @@ function get(context, params) {
   context.outputStatus = [200, 'OK'];
   
   var client = "ey001";
-  var templateName, returnDoc, uri;
+  var requestId, returnDoc, uri, merge;
   
   for (var pname in params) {
-    if (params.hasOwnProperty(pname) && pname === "templateName") {
-      xdmp.log("GR Test 001: pname: " + pname + " | param: " + params[pname]);
-      templateName = params[pname];
-    }
-  }
-
-  if (fn.stringLength(templateName) > 0) {
-    uri = slib.getTemplateUri(client, templateName).xpath("/binFileUri/text()");
-
-    xdmp.log("GR Test 001: uri: " + uri);
-
-    if (uri.toString() === "Template File does not exist") {
-      returnDoc = "Invalid Template Id";
-    } else {
-      returnDoc = fn.doc(uri);
-    }
-  }
-  
-  return returnDoc;
-
-/*
-return
-  try {
-    xdmp.documentInsert("/foo.json", {"foo": "bar"} );
-  } catch (err) {
-    err.toString();
-  }
- 
-  return
-    document {
-      try {
-        $returnDoc
-      } catch ($e) {
-        element error { $e/error:message }
+      if (params.hasOwnProperty(pname) && pname === "id") {
+        xdmp.log("GR Test 001: pname: " + pname + " | param: " + params[pname]);
+        requestId = params[pname];
+      } else {
+        if (params.hasOwnProperty(pname) && pname === "uri") {
+          xdmp.log("GR Test 001: pname: " + pname + " | param: " + params[pname]);
+          uri = params[pname];
+        } else {
+          if (params.hasOwnProperty(pname) && pname === "merge") {
+            xdmp.log("GR Test 001: pname: " + pname + " | param: " + params[pname]);
+            merge = params[pname];
+          }
       }
     }
-*/
+  }
+
+  if (fn.stringLength(requestId) > 0) {
+  
+    xdmp.log("GR Test 001: requestId: " + requestId);
+
+  }
+  
+  return requestId;
 };
 
 // PUT
@@ -89,6 +78,8 @@ function put(context, params, input) {
 
 function post(context, params, input) {
 
+  xdmp.log('POST invoked');
+
   var results = [];
   context.outputTypes = [];
   
@@ -100,9 +91,9 @@ function post(context, params, input) {
   context.outputStatus = [200, 'OK'];
   
   var client = "ey001";
-  var templateName, returnDoc, uri;
+  var templateId, returnDoc, uri;
 
-  var binDoc = normalizeInput(input);
+  var inputDoc = normalizeInput(input);
 
   var userName         = ingest.getUserFullNameJson();
   var userTempFullName = userName.toString();
@@ -125,53 +116,52 @@ function post(context, params, input) {
   user = fn.lowerCase(firstName + lastName);
 
   for (var pname in params) {
-    if (params.hasOwnProperty(pname) && pname === "templateName") {
+    if (params.hasOwnProperty(pname) && pname === "id") {
       xdmp.log("GR Test 001: pname: " + pname + " | param: " + params[pname]);
-      templateName = params[pname];
+      templateId = params[pname];
     }
   }
 
-  if (fn.stringLength(templateName) > 0) {
+  if (fn.stringLength(templateId) > 0) {
   }
   
-  var templateDir, templateMetadataDir, hashedUri, doc;
+  var requestDir, requestUri, hashedUri, templateName;
+
+  var doc = slib.createUserDataDoc(client, user, templateId, "", inputDoc);
   
-  templateDir = "/client/" + client + "/template";
+  var userDataId = doc.xpath("/*:meta/*:userDataId/text()");
+
+  xdmp.log("1 ----- userDataId: " + userDataId);
+//  var uri = "/client/" + client + "/user/" + userDataId + ".xml"
+
+  requestDir = "/client/" + client + "/datarequest/" + slib.getTemplateName(templateId);
   
-  templateMetadataDir = templateDir + "/" + templateName;
+  hashedUri = xdmp.hash64(requestDir + JSON.stringify(inputDoc));
 
-  templateMetadataUri = templateMetadataDir + "/" + templateName + ".xml";
-  templateBinFileUri  = templateMetadataDir + "/" + templateName + ".xlsx";
+  requestUri = requestDir + "/" + hashedUri + ".xml";
 
-  hashedTemplateUri = xdmp.hash64(templateMetadataDir);
-
-  xdmp.log("GR001 - templateMetadataUri: " + templateMetadataUri)
-  xdmp.log("GR001 - templateBinFileUri:  " + templateBinFileUri)
-  xdmp.log("GR001 - hashedTemplateUri:   " + hashedTemplateUri)
+  xdmp.log("GR001 - requestDir:   " + requestDir)
+  xdmp.log("GR001 - hashedUri:    " + hashedUri)
+  xdmp.log("GR001 - requestUri:   " + requestUri)
   xdmp.log("GR001 - userFullName: " + userFullName);
   xdmp.log("GR001 - user:         " + user);
 
-  doc = ingest.extractSpreadsheetData(client, userFullName, user, templateBinFileUri, "", binDoc);
-
   var evalCmd =
       'declareUpdate();\n' +
-      'var metaUri, doc, uri, binDoc;\n' +
-      'xdmp.documentInsert(metaUri, doc, xdmp.defaultPermissions(), ("spreadsheet"));\n' +
-      'xdmp.documentInsert(uri, binDoc, xdmp.defaultPermissions(), ("binary"));';
+      'var uri, doc;\n' +
+      'xdmp.documentInsert(uri, doc, xdmp.defaultPermissions(), ("userdata"));'
 
   var evalDoc =
     xdmp.eval(
       evalCmd,
       {
-        metaUri: templateMetadataUri,
-        doc: doc,
-        uri: templateBinFileUri,
-        binDoc: binDoc
+        uri: requestUri,
+        doc: inputDoc
       }
     );
 
-  return "Document Inserted: " + templateMetadataUri;
-
+  return "Document Inserted: " + requestUri;
+  
 /*
   return
     try {
@@ -185,40 +175,7 @@ function post(context, params, input) {
 
 function deleteFunction(context, params) {
   xdmp.log('DELETE invoked');
-
-  var results = [];
-  context.outputTypes = [];
-  
-  context.outputTypes.push('application/json');
-
-  // Set additional response headers using an object
-  context.outputHeaders = {'GR001-Header1' : 42, 'GR001-Header2': 'h2val' };
-
-  var client = "ey001";
-  var templateName, returnDoc, uri;
-
-  for (var pname in params) {
-    if (params.hasOwnProperty(pname)) {
-      if (params.hasOwnProperty(pname) && pname === "templateName") {
-        xdmp.log("GR Test 001: pname: " + pname + " | param: " + params[pname]);
-        templateName = params[pname];
-      }
-    }
-  }
-
-  context.outputStatus = [204, 'OK'];
-
-  var templateUri  = "/client/" + client + "/template/" + templateName + "/"
-  
-  xdmp.log("GR Test 001 ----- templateUri: " + templateUri);
-
-  if (fn.stringLength(templateUri) > 0) {
-      xdmp.directoryDelete(templateUri);
-  }
-
-  // Return a ValueIterator to return multiple documents
-  return
-    { status: 'complete' };
+  return null;
 };
 
 // PUT helper func that demonstrates working with input documents.
