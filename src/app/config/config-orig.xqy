@@ -18,7 +18,6 @@ xquery version "1.0-ml";
 module namespace c = "http://marklogic.com/roxy/config";
 
 import module namespace def  = "http://marklogic.com/roxy/defaults" at "/roxy/config/defaults.xqy";
-import module namespace olib = "http://marklogic.com/roxy/lib/origin-lib" at "/app/lib/origin-lib.xqy";
 
 declare namespace rest = "http://marklogic.com/appservices/rest";
 

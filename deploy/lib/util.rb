@@ -136,6 +136,13 @@ class Object
   def to_b
     present? && ['true', 'TRUE', 'yes', 'YES', 'y', 'Y', 't', 'T'].include?(self)
   end
+  
+  def optional_require(feature)
+    begin
+      require feature
+    rescue LoadError
+    end
+  end
 end
 
 def parse_json(body)
@@ -148,4 +155,10 @@ def parse_json(body)
   else
     return body
   end
+end
+
+def find_jar(jarname, jarpath = "../java/")
+  matches = Dir.glob(ServerConfig.expand_path("#{jarpath}*#{jarname}*.jar"))
+  raise "Missing #{jarname} jar." if matches.length == 0
+  matches[0]
 end

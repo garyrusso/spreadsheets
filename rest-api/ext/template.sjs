@@ -14,7 +14,9 @@ var ingest = require("/app/lib/ingest.xqy");
 function get(context, params) {
   var results = [];
   context.outputTypes = [];
-  
+
+  //xdmp.log("GR001 - GET Template Request");
+
   // Return a successful response status other than the default
   // using an array of the form [statusCode, statusMessage].
   // Do NOT use this to return an error response.
@@ -27,7 +29,7 @@ function get(context, params) {
   
   for (var pname in params) {
     if (params.hasOwnProperty(pname) && pname === "templateName") {
-      xdmp.log("GR Test 001: pname: " + pname + " | param: " + params[pname]);
+      xdmp.log("GR001 - pname: " + pname + " | param: " + params[pname]);
       templateName = params[pname];
     }
   }
@@ -42,6 +44,8 @@ function get(context, params) {
     } else {
       returnDoc = fn.doc(uri);
     }
+  } else {
+    returnDoc = slib.getTemplateListByClient(client)
   }
   
   return returnDoc;

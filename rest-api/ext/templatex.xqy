@@ -1,6 +1,6 @@
 xquery version "1.0-ml";
 
-module namespace tr = "http://marklogic.com/rest-api/resource/template";
+module namespace tr = "http://marklogic.com/rest-api/resource/templatex";
 
 import module namespace ingest = "http://marklogic.com/roxy/lib/ingest" at "/app/lib/ingest.xqy";
 

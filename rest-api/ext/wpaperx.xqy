@@ -1,6 +1,6 @@
 xquery version "1.0-ml";
 
-module namespace tr = "http://marklogic.com/rest-api/resource/wpaper";
+module namespace tr = "http://marklogic.com/rest-api/resource/wpaperx";
 
 import module namespace ssheet = "http://marklogic.com/roxy/lib/ssheet" at "/app/lib/spreadsheet.xqy";
 import module namespace ingest = "http://marklogic.com/roxy/lib/ingest" at "/app/lib/ingest.xqy";

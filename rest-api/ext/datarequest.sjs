@@ -2,6 +2,9 @@ var search = require("/MarkLogic/appservices/search/search.xqy");
 var slib   = require("/app/lib/search-lib.xqy");
 var ingest = require("/app/lib/ingest.xqy");
 
+var tax = "http://tax.thomsonreuters.com";
+var NS  = "http://tax.thomsonreuters.com";
+
 // GET
 //
 // This function returns a document node corresponding to each
@@ -13,7 +16,7 @@ var ingest = require("/app/lib/ingest.xqy");
 //
 function get(context, params) {
 
-  xdmp.log('GET invoked');
+  xdmp.log("GR001 - GET Data Request");
 
   var results = [];
   context.outputTypes = [];
@@ -51,7 +54,9 @@ function get(context, params) {
 
   }
   
-  return requestId;
+  var json = xdmp.unquote('{"name": "Oliver", "scores": [88, 67, 73], "isActive": true, "affiliation": null}').next().value; // Returns a ValueIterator
+  
+  return json.toObject();
 };
 
 // PUT
@@ -138,7 +143,7 @@ function post(context, params, input) {
   
   hashedUri = xdmp.hash64(requestDir + JSON.stringify(inputDoc));
 
-  requestUri = requestDir + "/" + hashedUri + ".xml";
+  requestUri = requestDir + "/" + hashedUri + ".json";
 
   xdmp.log("GR001 - requestDir:   " + requestDir)
   xdmp.log("GR001 - hashedUri:    " + hashedUri)
@@ -240,6 +245,37 @@ function returnErrToClient(statusCode, statusMsg, body)
   // unreachable - control does not return from fn.error.
 };
 
+function getDataRequestList(client, id)
+{
+  var doc;
+  
+  var query = cts.and-query((
+                  cts.collection-query(("spreadsheet")),
+                  cts.element-value-query(fn.QName(NS, "templateId"), id)
+                ));
+                
+  var results = cts.search(fn.doc(), query);
+
+/*
+  if (fn.count(results) > 0) {
+    
+  }
+      element { "templateInfo" }
+      {
+        element { "binFileUri" } { $results[1]/tax:workbook/tax:meta/tax:file/text() },
+        element { "metadataUri" } { xdmp:node-uri($results[1]) }
+      }
+    else
+      element { "templateInfo" }
+      {
+        element { "binFileUri" } { "Template File does not exist" },
+        element { "metadataUri" } { "Template Metadata File does not exist" }
+      }
+
+  return $doc
+ */
+  return "done";
+};
 
 // Include an export for each method supported by your extension.
 exports.GET = get;
