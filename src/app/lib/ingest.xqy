@@ -969,6 +969,9 @@ declare function ingest:extractSpreadsheetData(
     "xl/vbaProject.bin", "xl/media/image1.png"
   )
 
+  let $spreadSheetType := fn:tokenize($fileUri, "/") [4]
+  (: let $log := xdmp:log("1............... $spreadSheetType: "||$spreadSheetType) :)
+
   let $table := map:map()
   
   let $docs :=
@@ -1130,7 +1133,7 @@ declare function ingest:extractSpreadsheetData(
     {
       element { fn:QName($NS, "meta") }
       {
-        element { fn:QName($NS, "type") }           { "template" },
+        element { fn:QName($NS, "type") }           { $spreadSheetType },
         element { fn:QName($NS, "client") }         { $client },
         element { fn:QName($NS, "templateId") }     { $templateId },
         element { fn:QName($NS, "user") }           { $userFullName },
