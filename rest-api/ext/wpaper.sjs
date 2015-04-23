@@ -23,33 +23,157 @@ function get(context, params) {
   
   xdmp.addResponseHeader("Content-Disposition", 'attachment; filename="workpaper.xlsx"');
   context.outputStatus = [200, 'OK'];
-  
+
   var client = "ey001";
-  var fileName, returnDoc, uri;
-  
-  for (var pname in params) {
-    if (params.hasOwnProperty(pname) && pname === "filename") {
-      xdmp.log("GR001 - pname: " + pname + " | param: " + params[pname]);
-      fileName = params[pname];
-    }
-  }
+  var fileName, uri, qString, id, doc, retObj, workPaperId;
 
-  if (fn.stringLength(fileName) > 0) {
-    uri = slib.getTemplateUri(client, fileName).xpath("/binFileUri/text()");
+  var paramObj = getParameters(params);
 
-    xdmp.log("GR001 --- uri: " + uri);
-
-    if (uri.toString() === "Spreadsheet File does not exist") {
-      returnDoc = "Invalid File Id";
-    } else {
-      returnDoc = fn.doc(uri);
-    }
+  if (fn.stringLength(paramObj.fileName) > 0) {
+    fileName = paramObj.fileName;
   } else {
-    returnDoc = slib.getTemplateListByClient(client)
+    fileName = "";
   }
+
+  if (fn.stringLength(paramObj.q) > 0) {
+    qString = paramObj.q;
+  } else {
+    qString = "";
+  }
+
+  if (fn.stringLength(paramObj.uri) > 0) {
+    uri = paramObj.uri;
+  } else {
+    uri = "";
+  }
+
+  if (fn.stringLength(paramObj.fileId) > 0) {
+    id = paramObj.fileId;
+  } else {
+    id = "";
+  }
+
+  if (fn.stringLength(paramObj.workPaperId) > 0) {
+    workPaperId = paramObj.workPaperId;
+  } else {
+    workPaperId = "";
+  }
+
+  if (fn.stringLength(id) > 0) {
   
-  return returnDoc;
+    doc = slib.getWorkpaperUri(client, id);
+
+    xdmp.log("GR001 --- uri: " + doc.xpath("/metadataUri/text()"));
+
+    retObj =
+      {
+        id: doc.xpath("/templateId/text()"),
+        workPaperId: doc.xpath("/workPaperId/text()"),
+        client: doc.xpath("/client/text()"),
+        user: doc.xpath("/user/text()"),
+        fileUri: doc.xpath("/binFileUri/text()"),
+        metadataUri: doc.xpath("/metadataUri/text()")
+      };
+
+  } else if (fn.stringLength(workPaperId) > 0) {
+
+    doc = slib.getWorkpaperUriByWorkpaperId(client, workPaperId);
+
+    xdmp.log("GR001 --- uri: " + doc.xpath("/metadataUri/text()"));
+
+    retObj =
+      {
+        id: doc.xpath("/templateId/text()"),
+        workPaperId: doc.xpath("/workPaperId/text()"),
+        client: doc.xpath("/client/text()"),
+        user: doc.xpath("/user/text()"),
+        fileUri: doc.xpath("/binFileUri/text()"),
+        metadataUri: doc.xpath("/metadataUri/text()")
+      };
+
+  } else {
+  
+    doc = slib.getWorkpaperListByClient(client)
+    
+    var count = doc.xpath("/count/text()");
+    var templates = doc.xpath("/template");
+    
+    var resultsDoc = [];
+    
+    var templatesDoc = templates.next().value;
+        
+    var idList    = templatesDoc.xpath("/template/templateId/text()").valueOf();
+    var jIdList   = xdmp.toJSON(idList);
+    
+    var userList  = templatesDoc.xpath("/template/user/text()").valueOf();
+    var jUserList = xdmp.toJSON(userList);
+    
+    var uriList   = templatesDoc.xpath("/template/templateUri/text()").valueOf();
+    var jUriList  = xdmp.toJSON(uriList);
+    
+    var metaUriList = templatesDoc.xpath("/template/templateMetadataUri/text()").valueOf();
+    var jMetaUriList = xdmp.toJSON(metaUriList);
+
+    var workPaperIdList = templatesDoc.xpath("/template/workPaperId/text()").valueOf();
+    var jWorkPaperIdList = xdmp.toJSON(workPaperIdList);
+
+    for (i = 0; i < count; i++)
+    {
+      var tObj = templates.next().value;
+      
+      var obj = {
+          id: jIdList.root[i],
+          client: client,
+          workPaperId: jWorkPaperIdList.root[i],
+          user: jUserList.root[i],
+          fileUri: jUriList.root[i],
+          metadataUri: jMetaUriList.root[i]
+      };
+      
+      resultsDoc.push(obj);
+    }
+
+    retObj = {
+      count: count,
+      results: resultsDoc
+    }
+  }
+
+  return retObj;
 };
+
+/*
+  (: GR001 - Get client and user id from token :)
+  let $client := "ey001"
+  let $user   := "janedoe"
+  
+  let $merge :=
+    if (fn:empty(map:get($params, "merge"))) then
+      ""
+    else
+      map:get($params, "merge")
+
+  let $tempUri :=
+    if (fn:empty(map:get($params, "uri"))) then
+      ""
+    else
+      map:get($params, "uri")
+
+  let $id :=
+    if (fn:empty(map:get($params, "id"))) then
+      ""
+    else
+      map:get($params, "id")
+
+  let $uri :=
+    if (fn:string-length($id) gt 0) then
+      tr:getUserDataById($client, $id)/uri/text()
+    else
+      $tempUri
+
+  let $log := xdmp:log("1 ----- User Workpaper Uri: "||$uri)
+  let $log := xdmp:log("2 ----- User Workpaper Id:  "||$id)
+ */
 
 // PUT
 //
@@ -83,9 +207,7 @@ function post(context, params, input) {
 
   var binDoc = normalizeInput(input);
 
-  var paramObj = getParameters(params);
-
-  var fileName, returnDoc, uri, fileId, fileUri, retStatus, doc;
+  var fileName, returnDoc, uri, fileId, fileUri, retStatus, doc, workPaperId, version;
   var fileDir, fileMetadataDir, hashedUri, userFullName, user;
 
   var client = "ey001";
@@ -93,6 +215,18 @@ function post(context, params, input) {
   
   var paramObj = getParameters(params);
 
+  if (fn.stringLength(paramObj.workPaperId) > 0) {
+    workPaperId = paramObj.workPaperId;
+  } else {
+    workPaperId = "";
+  }
+  
+  if (fn.stringLength(paramObj.version) > 0) {
+    version = paramObj.version;
+  } else {
+    version = "";
+  }
+  
   if (fn.stringLength(paramObj.client) > 0) {
     client = paramObj.client;
   } else {
@@ -105,23 +239,27 @@ function post(context, params, input) {
     fileName = "";
   }
 
-  if (fn.stringLength(fileName) > 0) {
+  if (fn.stringLength(paramObj.user) > 0) {
+    userFullName = paramObj.user;
+    user         = getUserIdFromUserFullName(userFullName);
+  } else {
+    userFullName = userObj.userFullName.valueOf();
+    user         = userObj.user.valueOf();
   }
-  
-  userFullName = userObj.userFullName.valueOf();
-  user         = userObj.user.valueOf();
 
   fileDir = "/client/" + client + "/wpaper";
 
 xdmp.log("GR001 - fileName:    " + fileName);
 xdmp.log("GR001 - fileId:      " + fileId);
 xdmp.log("GR001 - client:      " + client);
+xdmp.log("GR001 - version:     " + version);
+xdmp.log("GR001 - workPaperId: " + workPaperId);
 
   fileMetadataDir = fileDir + "/" + fileName;
   fileMetadataUri = fileMetadataDir + "/" + fileName + ".xml";
   binFileUri      = fileMetadataDir + "/" + fileName + ".xlsx";
 
-  doc = ingest.extractSpreadsheetData(client, userFullName, user, binFileUri, "", binDoc);
+  doc = ingest.extractSpreadsheetData(client, userFullName, user, version, workPaperId, binFileUri, "", binDoc);
 
   hashedFileUri = xdmp.hash64(fileMetadataDir + xdmp.toJSON(doc).toString());
 
@@ -196,6 +334,9 @@ function deleteFunction(context, params) {
     fileId = "";
   }
 
+xdmp.log("GR001......... fileId: " + fileId);
+xdmp.log("GR001......... fileName: " + fileName);
+
   if (fn.stringLength(fileName) > 0) {
   
       // verify file Uri
@@ -217,7 +358,7 @@ function deleteFunction(context, params) {
   } else if (fn.stringLength(fileId) > 0) {
 
       // get file Uri using fileId
-      fileUrl = slib.getTemplateUri(client, fileId).xpath("/metadataUri/text()");
+      fileUrl = slib.getWorkpaperUri(client, fileId).xpath("/metadataUri/text()");
 
       var fileNameSections, fileDir, newFileId;
       newFileId = "";
@@ -311,7 +452,7 @@ function getWorkpaperUriById(client, id)
 
 function getParameters(params)
 {
-  var fileName, fileId, client, user;
+  var fileName, fileId, client, user, merge, uri, q, workPaperId, version;
   
   for (var pname in params) {
     if (params.hasOwnProperty(pname)) {
@@ -320,6 +461,7 @@ function getParameters(params)
 
       switch(pname) {
         case "filename":
+        case "fileName":
           fileName = params[pname];
           break;
   
@@ -328,13 +470,39 @@ function getParameters(params)
           break;
   
         case "user":
+        case "userid":
+        case "userId":
           user = params[pname];
           break;
-  
+
+        case "merge":
+          merge = params[pname];
+          break;
+
+        case "uri":
+        case "Uri":
+          uri = params[pname];
+          break;
+
         case "id":
+        case "Id":
           fileId = params[pname];
           break;
-          
+
+        case "q":
+          q = params[pname];
+          break;
+
+        case "workPaperId":
+        case "workpaperid":
+          workPaperId = params[pname];
+          break;
+
+        case "version":
+        case "Version":
+          version = params[pname];
+          break;
+
         default:
           break;
       }
@@ -346,7 +514,12 @@ function getParameters(params)
       fileName: fileName,
       fileId: fileId,
       client: client,
-      user: user
+      user: user,
+      merge: merge,
+      uri: uri,
+      q: q,
+      version: version,
+      workPaperId: workPaperId
     };
 
   return retObj;
@@ -354,27 +527,16 @@ function getParameters(params)
 
 function getUserInfo()
 {
-  var temp, firstName, lastName, user, trimmedFirstName, trimmedLastName;
+  var temp, firstName, lastName, userFullName, user;
   
   var userObj = xdmp.unquote(ingest.getUserFullNameJson()).next().value;
   
-  firstName = userObj.root.firstName;
-  lastName  = userObj.root.lastName;
+  firstName = userObj.root.firstName.valueOf();
+  lastName  = userObj.root.lastName.valueOf();
   
   userFullName = firstName + ' ' + lastName;
   
-  firstNameValue = firstName.valueOf();
-  lastNameValue  = lastName.valueOf();
-  
-  firstNameValue = firstNameValue.replace(/\s/g,'');
-  firstNameValue = firstNameValue.replace(/\./g,'');
-  firstNameValue = firstNameValue.replace(/\'/g,'');
-  
-  lastNameValue  = lastNameValue.replace(/\s/g,'');
-  lastNameValue  = lastNameValue.replace(/\./g,'');
-  lastNameValue  = lastNameValue.replace(/\'/g,'');
-  
-  user = fn.lowerCase(firstNameValue + lastNameValue);
+  user = getUserIdFromUserFullName(userFullName);
   
   var retObj =
     {
@@ -383,6 +545,26 @@ function getUserInfo()
     };
 
   return retObj;
+};
+
+function getUserIdFromUserFullName(fullName)
+{
+  var user, fullNameSections, fName, lName, text = "";
+  
+  fName = fn.substringBefore(fullName, " ");
+  
+  fullNameSections = fn.tokenize(fullName, " ").toArray();
+  lName = fullNameSections[fullNameSections.length-1];
+  
+  for (index = 0; index < fullNameSections.length; index++) {
+    text += fullNameSections[index];
+  };
+  text = text.replace(/\./g,'');
+  text = text.replace(/\'/g,'');
+  
+  user = fn.lowerCase(text);
+  
+  return user;
 };
 
 // Helper function that demonstrates how to normalize inputs

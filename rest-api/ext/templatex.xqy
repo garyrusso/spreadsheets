@@ -190,7 +190,7 @@ function tr:put(
   let $binDocOrig          := fn:doc($templateUri)
   let $docOrig             := fn:doc($templateMetadataUri)
   let $origTemplateId      := $docOrig/tax:workbook/tax:meta/tax:templateId/text()
-  let $docNew              := ingest:extractSpreadsheetData($client, $userFullName, $user, $templateUri, $origTemplateId, $binDocNew)
+  let $docNew              := ingest:extractSpreadsheetData($client, $userFullName, $user, (), (), $templateUri, $origTemplateId, $binDocNew)
 
   let $__ := xdmp:node-replace($docOrig/tax:workbook, $docNew)
   let $__ := xdmp:node-replace($binDocOrig, $binDocNew)
@@ -267,7 +267,7 @@ function tr:post(
       let $templateMetadataUri := $templateMetadataDir||"/"||$templateBinFileName||".xml"
       let $templateBinFileUri  := $templateMetadataDir||"/"||$templateBinFileName||".xlsx"
     
-      let $doc                 := ingest:extractSpreadsheetData($client, $userFullName, $user, $templateBinFileUri, "", $binDoc)
+      let $doc                 := ingest:extractSpreadsheetData($client, $userFullName, $user, (), (), $templateBinFileUri, "", $binDoc)
     
       let $evalCmd :=
         fn:concat

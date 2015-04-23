@@ -959,6 +959,8 @@ declare function ingest:extractSpreadsheetData(
   $client as xs:string,
   $userFullName as xs:string,
   $user as xs:string,
+  $version as xs:string,
+  $workPaperId as xs:string,
   $fileUri as xs:string,
   $origTemplateId as xs:string,
   $binFile as node()*)
@@ -1136,7 +1138,9 @@ declare function ingest:extractSpreadsheetData(
         element { fn:QName($NS, "type") }           { $spreadSheetType },
         element { fn:QName($NS, "client") }         { $client },
         element { fn:QName($NS, "templateId") }     { $templateId },
+        element { fn:QName($NS, "workPaperId") }    { $workPaperId },
         element { fn:QName($NS, "user") }           { $userFullName },
+        element { fn:QName($NS, "version") }        { $version },
         element { fn:QName($NS, "creator") }        { map:get($table, "docProps/core.xml")/core:coreProperties/dc:creator/text() },
         element { fn:QName($NS, "file") }           { $fileUri },
         element { fn:QName($NS, "lastModifiedBy") } { map:get($table, "docProps/core.xml")/core:coreProperties/core:lastModifiedBy/text() },
