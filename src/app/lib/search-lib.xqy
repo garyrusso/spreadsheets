@@ -24,7 +24,7 @@ declare function slib:createUserDataDoc($client as xs:string, $user as xs:string
 {
   let $dnames      := () (: json:transform-from-json($jDnames) :)
 
-  let $templateUri := slib:getTemplateUri($client, $templateId)/metadataUri/text()
+  let $templateUri := slib:getTemplateUriByTemplateId($client, $templateId)/metadataUri/text()
 
   let $fullName         := ingest:getUserFullName()
   let $userFullName     := $fullName/firstName/text()||" "||$fullName/lastName/text()
@@ -72,74 +72,36 @@ declare function slib:createUserDataDoc($client as xs:string, $user as xs:string
 
 (:
  :)
-declare function slib:getTemplateUri($client as xs:string, $id as xs:string)
+declare function slib:getTemplateUriByTemplateId($client as xs:string, $templateId as xs:string)
 {
   let $query := cts:and-query((
                   cts:collection-query(("spreadsheet")),
                   cts:element-value-query(fn:QName($NS, "type"), "template"),
                   cts:element-value-query(fn:QName($NS, "client"), $client),
-                  cts:element-value-query(fn:QName($NS, "templateId"), $id)
+                  cts:element-value-query(fn:QName($NS, "templateId"), $templateId)
                 ))
                 
   let $results := cts:search(fn:doc(), $query)
-  
-  let $doc :=
-    if (fn:count($results) gt 0) then
-      element { "templateInfo" }
-      {
-        element { "templateId" }  { $id },
-        element { "workPaperId" } { $results[1]/tax:workbook/tax:meta/tax:workPaperId/text() },
-        element { "client" }      { $client },
-        element { "binFileUri" }  { $results[1]/tax:workbook/tax:meta/tax:file/text() },
-        element { "metadataUri" } { xdmp:node-uri($results[1]) }
-      }
-    else
-      element { "templateInfo" }
-      {
-        element { "templateId" }  { $id },
-        element { "workPaperId" } { "No Document Found" },
-        element { "client" }      { $client },
-        element { "binFileUri" }  { "Template File does not exist" },
-        element { "metadataUri" } { "Template Metadata File does not exist" }
-      }
+
+  let $doc := slib:formatResults($results)
 
   return $doc
 };
 
 (:
  :)
-declare function slib:getWorkpaperUri($client as xs:string, $id as xs:string)
+declare function slib:getWorkpaperUriByTemplateId($client as xs:string, $templateId as xs:string)
 {
   let $query := cts:and-query((
                   cts:collection-query(("spreadsheet")),
                   cts:element-value-query(fn:QName($NS, "type"), "wpaper"),
                   cts:element-value-query(fn:QName($NS, "client"), $client),
-                  cts:element-value-query(fn:QName($NS, "templateId"), $id)
+                  cts:element-value-query(fn:QName($NS, "templateId"), $templateId)
                 ))
-
+  
   let $results := cts:search(fn:doc(), $query)
   
-  let $doc :=
-    if (fn:count($results) gt 0) then
-      element { "templateInfo" }
-      {
-        element { "templateId" }  { $id },
-        element { "workPaperId" } { $results[1]/tax:workbook/tax:meta/tax:workPaperId/text() },
-        element { "client" }      { $client },
-        element { "user" }        { $results[1]/tax:workbook/tax:meta/tax:user/text() },
-        element { "binFileUri" }  { $results[1]/tax:workbook/tax:meta/tax:file/text() },
-        element { "metadataUri" } { xdmp:node-uri($results[1]) }
-      }
-    else
-      element { "templateInfo" }
-      {
-        element { "templateId" }  { $id },
-        element { "workPaperId" } { "No document found" },
-        element { "client" }      { $client },
-        element { "user" }        { "No document found" },
-        element { "binFileUri" }  { "Template File does not exist" },
-        element { "metadataUri" } { "Template Metadata File does not exist" }
-      }
+  let $doc := slib:formatResults($results)
 
   return $doc
 };
@@ -154,37 +116,48 @@ declare function slib:getWorkpaperUriByWorkpaperId($client as xs:string, $workPa
                   cts:element-value-query(fn:QName($NS, "client"), $client),
                   cts:element-value-query(fn:QName($NS, "workPaperId"), $workPaperId)
                 ))
-
+  
   let $results := cts:search(fn:doc(), $query)
   
-  let $doc :=
-    if (fn:count($results) gt 0) then
-      element { "templateInfo" }
-      {
-        element { "templateId" }  { $results[1]/tax:workbook/tax:meta/tax:templateId/text() },
-        element { "workPaperId" } { $workPaperId },
-        element { "client" }      { $client },
-        element { "user" }        { $results[1]/tax:workbook/tax:meta/tax:user/text() },
-        element { "binFileUri" }  { $results[1]/tax:workbook/tax:meta/tax:file/text() },
-        element { "metadataUri" } { xdmp:node-uri($results[1]) }
-      }
-    else
-      element { "templateInfo" }
-      {
-        element { "templateId" }  { "No document found" },
-        element { "workPaperId" } { $workPaperId },
-        element { "client" }      { $client },
-        element { "user" }        { "No document found" },
-        element { "binFileUri" }  { "Template File does not exist" },
-        element { "metadataUri" } { "Template Metadata File does not exist" }
-      }
+  let $doc := slib:formatResults($results)
 
   return $doc
 };
 
 (:
  :)
-declare function slib:formatResults($results as document-node()*)
+declare function slib:formatResults($results)
+{
+  let $doc :=
+    if (fn:count($results) gt 0) then
+      element { "info" }
+      {
+        element { "templateId" }  { $results[1]/tax:workbook/tax:meta/tax:templateId/text() },
+        element { "workPaperId" } { $results[1]/tax:workbook/tax:meta/tax:workPaperId/text() },
+        element { "client" }      { $results[1]/tax:workbook/tax:meta/tax:client/text() },
+        element { "user" }        { $results[1]/tax:workbook/tax:meta/tax:user/text() },
+        element { "version" }     { $results[1]/tax:workbook/tax:meta/tax:version/text() },
+        element { "binFileUri" }  { $results[1]/tax:workbook/tax:meta/tax:file/text() },
+        element { "metadataUri" } { xdmp:node-uri($results[1]) }
+      }
+    else
+      element { "info" }
+      {
+        element { "templateId" }  { "No document found" },
+        element { "workPaperId" } { "No document found" },
+        element { "client" }      { "No document found" },
+        element { "user" }        { "No document found" },
+        element { "version" }     { "No document found" },
+        element { "binFileUri" }  { "Template File does not exist" },
+        element { "metadataUri" } { "Template Metadata File does not exist" }
+      }
+      
+  return $doc
+};
+
+(:
+ :)
+declare function slib:formatListResults($results as document-node()*)
 {
   let $doc :=
     element { "list" }
@@ -198,7 +171,8 @@ declare function slib:formatResults($results as document-node()*)
             element { "workPaperId" } { $result/tax:workbook/tax:meta/tax:workPaperId/text() },
             element { "templateUri" } { $result/tax:workbook/tax:meta/tax:file/text() },
             element { "templateMetadataUri" } { xdmp:node-uri($result) },
-            element { "user" } { $result/tax:workbook/tax:meta/tax:user/text() }
+            element { "user" } { $result/tax:workbook/tax:meta/tax:user/text() },
+            element { "client" } { $result/tax:workbook/tax:meta/tax:client/text() }
           }
     }
 
@@ -230,41 +204,57 @@ declare function slib:getFullTemplateList()
                 
   let $results := cts:search(fn:doc(), $query)
   
-  return slib:formatResults($results)
+  return slib:formatListResults($results)
 };
 
 (:
  :)
 declare function slib:getTemplateListByClient($client as xs:string)
 {
-  let $query := cts:and-query((
-                  cts:collection-query(("spreadsheet")),
-                  cts:element-value-query(fn:QName($NS, "type"), "template"),
-                  cts:element-value-query(fn:QName($NS, "client"), $client)
-                ))
-                
-  let $results := cts:search(fn:doc(), $query)
+  let $results := slib:getSpreadsheetListByClient($client, "template")
   
-  return slib:formatResults($results)
+  return slib:formatListResults($results)
 };
 
 (:
  :)
 declare function slib:getWorkpaperListByClient($client as xs:string)
 {
+  let $results := slib:getSpreadsheetListByClient($client, "wpaper")
+  
+  return slib:formatListResults($results)
+};
+
+(:
+ :)
+declare function slib:getSpreadsheetListByClient($client as xs:string, $type)
+{
   let $query := cts:and-query((
                   cts:collection-query(("spreadsheet")),
-                  cts:element-value-query(fn:QName($NS, "type"), "wpaper"),
+                  cts:element-value-query(fn:QName($NS, "type"), $type),
                   cts:element-value-query(fn:QName($NS, "client"), $client)
                 ))
                 
   let $results := cts:search(fn:doc(), $query)
   
-  return slib:formatResults($results)
+  return $results
+};
+
+declare function slib:getWorkpaperListByClientByQstring($client as xs:string, $q as xs:string)
+{
+  let $query := cts:and-query((
+                  cts:collection-query(("spreadsheet")),
+                  cts:element-value-query(fn:QName($NS, "type"), "wpaper"),
+                  cts:element-value-query(fn:QName($NS, "client"), $client),
+                  cts:word-query($q)
+                ))
+                
+  let $results := cts:search(fn:doc(), $query)
+  
+  return slib:formatListResults($results)
 };
 
 (:
- :)
 declare function slib:searchTemplates($q as xs:string, $client as xs:string)
 {
   let $query := cts:and-query((
@@ -275,6 +265,7 @@ declare function slib:searchTemplates($q as xs:string, $client as xs:string)
                 
   let $results := cts:search(fn:doc(), $query)
   
-  return slib:formatResults($results)
+  return slib:formatListResults($results)
 };
+ :)
 

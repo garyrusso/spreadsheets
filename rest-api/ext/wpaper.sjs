@@ -24,11 +24,16 @@ function get(context, params) {
   xdmp.addResponseHeader("Content-Disposition", 'attachment; filename="workpaper.xlsx"');
   context.outputStatus = [200, 'OK'];
 
-  var client = "ey001";
-  var fileName, uri, qString, id, doc, retObj, workPaperId;
+  var fileName, uri, qString, id, doc, retObj, workPaperId, client;
 
   var paramObj = getParameters(params);
 
+  if (fn.stringLength(paramObj.client) > 0) {
+    client = paramObj.client;
+  } else {
+    client = "ey001";
+  }
+  
   if (fn.stringLength(paramObj.fileName) > 0) {
     fileName = paramObj.fileName;
   } else {
@@ -59,121 +64,26 @@ function get(context, params) {
     workPaperId = "";
   }
 
-  if (fn.stringLength(id) > 0) {
+  if (fn.stringLength(qString) > 0) {
   
-    doc = slib.getWorkpaperUri(client, id);
+    retObj = getWorkpaperListByClientByQstring(client, qString);
 
-    xdmp.log("GR001 --- uri: " + doc.xpath("/metadataUri/text()"));
-
-    retObj =
-      {
-        id: doc.xpath("/templateId/text()"),
-        workPaperId: doc.xpath("/workPaperId/text()"),
-        client: doc.xpath("/client/text()"),
-        user: doc.xpath("/user/text()"),
-        fileUri: doc.xpath("/binFileUri/text()"),
-        metadataUri: doc.xpath("/metadataUri/text()")
-      };
+  } else if (fn.stringLength(id) > 0) {
+  
+    retObj = getWorkpaperUriByTemplateId(client, id);
 
   } else if (fn.stringLength(workPaperId) > 0) {
 
-    doc = slib.getWorkpaperUriByWorkpaperId(client, workPaperId);
-
-    xdmp.log("GR001 --- uri: " + doc.xpath("/metadataUri/text()"));
-
-    retObj =
-      {
-        id: doc.xpath("/templateId/text()"),
-        workPaperId: doc.xpath("/workPaperId/text()"),
-        client: doc.xpath("/client/text()"),
-        user: doc.xpath("/user/text()"),
-        fileUri: doc.xpath("/binFileUri/text()"),
-        metadataUri: doc.xpath("/metadataUri/text()")
-      };
+    retObj = getWorkpaperUriByWorkpaperId(client, workPaperId);
 
   } else {
   
-    doc = slib.getWorkpaperListByClient(client)
-    
-    var count = doc.xpath("/count/text()");
-    var templates = doc.xpath("/template");
-    
-    var resultsDoc = [];
-    
-    var templatesDoc = templates.next().value;
-        
-    var idList    = templatesDoc.xpath("/template/templateId/text()").valueOf();
-    var jIdList   = xdmp.toJSON(idList);
-    
-    var userList  = templatesDoc.xpath("/template/user/text()").valueOf();
-    var jUserList = xdmp.toJSON(userList);
-    
-    var uriList   = templatesDoc.xpath("/template/templateUri/text()").valueOf();
-    var jUriList  = xdmp.toJSON(uriList);
-    
-    var metaUriList = templatesDoc.xpath("/template/templateMetadataUri/text()").valueOf();
-    var jMetaUriList = xdmp.toJSON(metaUriList);
-
-    var workPaperIdList = templatesDoc.xpath("/template/workPaperId/text()").valueOf();
-    var jWorkPaperIdList = xdmp.toJSON(workPaperIdList);
-
-    for (i = 0; i < count; i++)
-    {
-      var tObj = templates.next().value;
-      
-      var obj = {
-          id: jIdList.root[i],
-          client: client,
-          workPaperId: jWorkPaperIdList.root[i],
-          user: jUserList.root[i],
-          fileUri: jUriList.root[i],
-          metadataUri: jMetaUriList.root[i]
-      };
-      
-      resultsDoc.push(obj);
-    }
-
-    retObj = {
-      count: count,
-      results: resultsDoc
-    }
+    retObj = getWorkpaperListByClient(client);
+  
   }
 
   return retObj;
 };
-
-/*
-  (: GR001 - Get client and user id from token :)
-  let $client := "ey001"
-  let $user   := "janedoe"
-  
-  let $merge :=
-    if (fn:empty(map:get($params, "merge"))) then
-      ""
-    else
-      map:get($params, "merge")
-
-  let $tempUri :=
-    if (fn:empty(map:get($params, "uri"))) then
-      ""
-    else
-      map:get($params, "uri")
-
-  let $id :=
-    if (fn:empty(map:get($params, "id"))) then
-      ""
-    else
-      map:get($params, "id")
-
-  let $uri :=
-    if (fn:string-length($id) gt 0) then
-      tr:getUserDataById($client, $id)/uri/text()
-    else
-      $tempUri
-
-  let $log := xdmp:log("1 ----- User Workpaper Uri: "||$uri)
-  let $log := xdmp:log("2 ----- User Workpaper Id:  "||$id)
- */
 
 // PUT
 //
@@ -193,8 +103,271 @@ function get(context, params) {
 // - How to return an error report to the client
 //
 function put(context, params, input) {
+
   xdmp.log('PUT invoked');
-  return null;
+  
+  var results = [];
+  context.outputTypes = [];
+  context.outputStatus = [200, 'OK'];
+
+  var userObj = getUserInfo();
+
+  var binDoc = normalizeInput(input);
+
+  var fileName, returnDoc, uri, fileId, retStatus, doc, workPaperId;
+  var fileDir, fileMetadataDir, hashedUri, userFullName, user, statusMessage;
+  var version, oldVersion, newVersion;
+
+  var client = "";
+  var fileId = "";
+
+  statusMessage = "No Document Action Yet";
+
+  var paramObj = getParameters(params);
+
+  if (fn.stringLength(paramObj.workPaperId) > 0) {
+    workPaperId = paramObj.workPaperId;
+  } else {
+    workPaperId = "";
+  }
+  
+  if (fn.stringLength(paramObj.version) > 0) {
+    version = paramObj.version;
+  } else {
+    version = "";
+  }
+  
+  if (fn.stringLength(paramObj.client) > 0) {
+    client = paramObj.client;
+  } else {
+    client = "ey001";
+  }
+
+  if (fn.stringLength(paramObj.user) > 0) {
+    userFullName = paramObj.user;
+    user         = getUserIdFromUserFullName(userFullName);
+  } else {
+    userFullName = userObj.userFullName.valueOf();
+    user         = userObj.user.valueOf();
+  }
+
+  if (fn.stringLength(workPaperId) > 0) {
+  
+    xdmp.log("1............. client:      " + client)
+    xdmp.log("1............. workPaperId: " + workPaperId)
+
+  var retObj3 =
+    {
+      status: statusMessage,
+      userFullName: userFullName,
+      user: user,
+      workPaperId: workPaperId
+    };
+
+  return retObj3;
+////
+
+    // search for existing doc using the workPaperId. Return message if not found.
+    var origDoc = getWorkpaperUriByWorkpaperId(client, workPaperId);
+
+    if (typeof(origDoc) != 'undefined' && origDoc != null) {
+      
+      fileId          = origDoc.id;
+      oldVersion      = origDoc.version;
+      binFileUri      = origDoc.fileUri;
+      fileMetadataUri = origDoc.metadataUri;
+
+      // increment the version value if one is not provided.
+      if (fn.stringLength(version) > 0) {
+        newVersion = version;
+      } else {
+        newVersion = "2"; //oldVersion + 1;
+      }
+
+  var retObj2 =
+    {
+      status: statusMessage,
+      templateId: fileId,
+      workPaperId: workPaperId,
+      userFullName: userFullName,
+      user: user,
+      client: client,
+      version: version,
+      oldVersion: oldVersion,
+      newVersion: newVersion,
+      binFileUri: binFileUri,
+      metadataUri: fileMetadataUri
+    };
+
+  return retObj2;
+
+//////
+      doc = ingest.extractSpreadsheetData(client, userFullName, user, newVersion, workPaperId, binFileUri, "", binDoc);
+      
+      hashedFileUri = xdmp.hash64(fileMetadataDir + xdmp.toJSON(doc).toString());
+
+      xdmp.log("1......... hashedFileUri: " + hashedFileUri);
+
+      statusMessage = "Document Updated Successfully";
+
+    } else {
+
+      statusMessage = "No Document Found";
+      oldVersion    = "";
+      newVersion    = "";
+      
+    }
+    
+  } else {
+    
+    statusMessage = "Document Not Updated";
+    
+  }
+  
+  var retObj =
+    {
+      status: statusMessage,
+      templateId: fileId,
+      workPaperId: workPaperId,
+      userFullName: userFullName,
+      user: user,
+      client: client,
+      version: version,
+      oldVersion: oldVersion,
+      newVersion: newVersion,
+      binFileUri: binFileUri,
+      metadataUri: fileMetadataUri
+    };
+
+  return retObj;
+};
+
+function put1(context, params, input) {
+
+  xdmp.log('PUT invoked');
+  
+  var results = [];
+  context.outputTypes = [];
+  context.outputStatus = [200, 'OK'];
+
+  var userObj = getUserInfo();
+
+  var binDoc = normalizeInput(input);
+
+  var fileName, returnDoc, uri, fileId, retStatus, doc, workPaperId;
+  var fileDir, fileMetadataDir, hashedUri, userFullName, user, statusMessage;
+  var version, oldVersion, newVersion;
+
+  var client = "";
+  var fileId = "";
+
+  statusMessage = "No Document Action Yet";
+
+  var paramObj = getParameters(params);
+
+  if (fn.stringLength(paramObj.workPaperId) > 0) {
+    workPaperId = paramObj.workPaperId;
+  } else {
+    workPaperId = "";
+  }
+  
+  if (fn.stringLength(paramObj.version) > 0) {
+    version = paramObj.version;
+  } else {
+    version = "";
+  }
+  
+  if (fn.stringLength(paramObj.client) > 0) {
+    client = paramObj.client;
+  } else {
+    client = "ey001";
+  }
+
+  if (fn.stringLength(paramObj.user) > 0) {
+    userFullName = paramObj.user;
+    user         = getUserIdFromUserFullName(userFullName);
+  } else {
+    userFullName = userObj.userFullName.valueOf();
+    user         = userObj.user.valueOf();
+  }
+
+  if (fn.stringLength(workPaperId) > 0) {
+  
+    xdmp.log("1............. client:      " + client)
+    xdmp.log("1............. workPaperId: " + workPaperId)
+
+    // search for existing doc using the workPaperId. Return message if not found.
+    var origDoc = getWorkpaperUriByWorkpaperId(client, workPaperId);
+
+    if (typeof(origDoc) != 'undefined' && origDoc != null) {
+      
+      fileId          = origDoc.id;
+      oldVersion      = origDoc.version;
+      binFileUri      = origDoc.fileUri;
+      fileMetadataUri = origDoc.metadataUri;
+
+      // increment the version value if one is not provided.
+      if (fn.stringLength(version) > 0) {
+        newVersion = version;
+      } else {
+        newVersion = "2"; //oldVersion + 1;
+      }
+
+      doc = ingest.extractSpreadsheetData(client, userFullName, user, newVersion, workPaperId, binFileUri, "", binDoc);
+      
+      hashedFileUri = xdmp.hash64(fileMetadataDir + xdmp.toJSON(doc).toString());
+
+      xdmp.log("1......... hashedFileUri: " + hashedFileUri);
+
+      var evalCmd =
+          'declareUpdate();\n' +
+          'var metaUri, doc, uri, binDoc;\n' +
+          'xdmp.documentInsert(metaUri, doc, xdmp.defaultPermissions(), ("spreadsheet"));\n' +
+          'xdmp.documentInsert(uri, binDoc, xdmp.defaultPermissions(), ("binary"));';
+    
+      var evalDoc =
+        xdmp.eval(
+          evalCmd,
+          {
+            metaUri: fileMetadataUri,
+            doc: doc,
+            uri: binFileUri,
+            binDoc: binDoc
+          }
+        );
+
+      statusMessage = "Document Updated Successfully";
+
+    } else {
+
+      statusMessage = "No Document Found";
+      oldVersion    = "";
+      newVersion    = "";
+      
+    }
+    
+  } else {
+    
+    statusMessage = "Document Not Updated";
+    
+  }
+  
+  var retObj =
+    {
+      status: statusMessage,
+      templateId: fileId,
+      workPaperId: workPaperId,
+      userFullName: userFullName,
+      user: user,
+      client: client,
+      version: version,
+      oldVersion: oldVersion,
+      newVersion: newVersion,
+      binFileUri: binFileUri,
+      metadataUri: fileMetadataUri
+    };
+
+  return retObj;
 };
 
 function post(context, params, input) {
@@ -249,12 +422,6 @@ function post(context, params, input) {
 
   fileDir = "/client/" + client + "/wpaper";
 
-xdmp.log("GR001 - fileName:    " + fileName);
-xdmp.log("GR001 - fileId:      " + fileId);
-xdmp.log("GR001 - client:      " + client);
-xdmp.log("GR001 - version:     " + version);
-xdmp.log("GR001 - workPaperId: " + workPaperId);
-
   fileMetadataDir = fileDir + "/" + fileName;
   fileMetadataUri = fileMetadataDir + "/" + fileName + ".xml";
   binFileUri      = fileMetadataDir + "/" + fileName + ".xlsx";
@@ -263,11 +430,11 @@ xdmp.log("GR001 - workPaperId: " + workPaperId);
 
   hashedFileUri = xdmp.hash64(fileMetadataDir + xdmp.toJSON(doc).toString());
 
-  xdmp.log("GR001 - fileMetadataUri: " + fileMetadataUri)
-  xdmp.log("GR001 - binFileUri:      " + binFileUri)
-  xdmp.log("GR001 - userFullName:    " + userFullName);
-  xdmp.log("GR001 - user:            " + user);
-  xdmp.log("GR001 - hashedFileUri:   " + hashedFileUri)
+//  xdmp.log("GR001 - fileMetadataUri: " + fileMetadataUri)
+//  xdmp.log("GR001 - binFileUri:      " + binFileUri)
+//  xdmp.log("GR001 - userFullName:    " + userFullName);
+//  xdmp.log("GR001 - user:            " + user);
+//  xdmp.log("GR001 - hashedFileUri:   " + hashedFileUri)
 
   var evalCmd =
       'declareUpdate();\n' +
@@ -334,9 +501,6 @@ function deleteFunction(context, params) {
     fileId = "";
   }
 
-xdmp.log("GR001......... fileId: " + fileId);
-xdmp.log("GR001......... fileName: " + fileName);
-
   if (fn.stringLength(fileName) > 0) {
   
       // verify file Uri
@@ -358,7 +522,7 @@ xdmp.log("GR001......... fileName: " + fileName);
   } else if (fn.stringLength(fileId) > 0) {
 
       // get file Uri using fileId
-      fileUrl = slib.getWorkpaperUri(client, fileId).xpath("/metadataUri/text()");
+      fileUrl = getWorkpaperUriByTemplateId(client, fileId).metadataUri;
 
       var fileNameSections, fileDir, newFileId;
       newFileId = "";
@@ -370,7 +534,7 @@ xdmp.log("GR001......... fileName: " + fileName);
         fileName = fileNameSections[fileNameSections.length-2];
         
         fileDir = fn.substringBefore(fileUrl, fileNameSections[fileNameSections.length-1]);
-  
+
         doc = cts.doc(fileUrl);
         if (doc) {
           newFileId = doc.xpath("/*:workbook/*:meta/*:templateId/text()");
@@ -431,6 +595,7 @@ function doSomething(doc, docType, basename)
   }
 };
 
+/*
 function getWorkpaperUriById(client, id)
 {
   //client = "ey001";
@@ -449,6 +614,7 @@ function getWorkpaperUriById(client, id)
 
   return retObj;
 };
+*/
 
 function getParameters(params)
 {
@@ -457,7 +623,9 @@ function getParameters(params)
   for (var pname in params) {
     if (params.hasOwnProperty(pname)) {
     
-      xdmp.log("GR001 - pname: " + pname + " | param: " + params[pname]);
+      xdmp.log("........... param: " + pname);
+      xdmp.log("........... value: " + params[pname]);
+      xdmp.log(" ");
 
       switch(pname) {
         case "filename":
@@ -545,6 +713,170 @@ function getUserInfo()
     };
 
   return retObj;
+};
+
+function getWorkpaperUriByTemplateId(client, templateId)
+{
+  var doc, retObj;
+
+  doc = slib.getWorkpaperUriByTemplateId(client, templateId);
+
+  retObj =
+    {
+      id: doc.xpath("/templateId/text()"),
+      workPaperId: doc.xpath("/workPaperId/text()"),
+      client: doc.xpath("/client/text()"),
+      user: doc.xpath("/user/text()"),
+      fileUri: doc.xpath("/binFileUri/text()"),
+      version: doc.xpath("/version/text()"),
+      metadataUri: doc.xpath("/metadataUri/text()")
+    };
+    
+  return retObj;
+};
+
+function getWorkpaperUriByWorkpaperId(client, workPaperId)
+{
+  var doc, retObj;
+
+  doc = slib.getWorkpaperUriByWorkpaperId(client, workPaperId);
+
+  retObj =
+    {
+      id: doc.xpath("/templateId/text()"),
+      workPaperId: doc.xpath("/workPaperId/text()"),
+      client: doc.xpath("/client/text()"),
+      user: doc.xpath("/user/text()"),
+      fileUri: doc.xpath("/binFileUri/text()"),
+      version: doc.xpath("/version/text()"),
+      metadataUri: doc.xpath("/metadataUri/text()")
+    };
+    
+  return retObj;
+};
+
+function getWorkpaperListByClient(client)
+{
+  var doc = slib.getWorkpaperListByClient(client);
+  
+  var count = doc.xpath("/count/text()");
+
+  var retObj = {
+    count: count,
+    client: client,
+    results: formatResults(doc)
+  };
+
+  return retObj;
+};
+
+function getWorkpaperListByClientByQstring(client, qString)
+{
+  var doc = slib.getWorkpaperListByClientByQstring(client, qString);
+  
+  var count = doc.xpath("/count/text()");
+
+  var retObj = {
+    count: count,
+    client: client,
+    search: qString,
+    results: formatResults(doc)
+  };
+
+  return retObj;
+};
+
+function formatResults(doc)
+{
+  var count, templates, templatesDoc;
+
+  var clientList, jClientList;
+  var idList, jIdList;
+  var userList, jUserList;
+  var uriList, jUriList;
+  var metaUriList, jMetaUriList;
+  var workPaperIdList, jWorkPaperIdList;
+
+  count = doc.xpath("/count/text()");
+  templates = doc.xpath("/template");
+
+  var resultsDoc = [];
+
+  if (count > 0) {
+  
+    if (count == 1) {
+
+      templatesDoc = templates.next().value.valueOf();
+
+      idList    = templatesDoc.xpath("/template/templateId/text()");
+      jIdList   = xdmp.toJSON(idList);
+
+      userList  = templatesDoc.xpath("/template/user/text()");
+      jUserList = xdmp.toJSON(userList);
+
+      clientList  = templatesDoc.xpath("/template/client/text()");
+      jClientList = xdmp.toJSON(clientList);
+
+      uriList   = templatesDoc.xpath("/template/templateUri/text()");
+      jUriList  = xdmp.toJSON(uriList);
+      
+      metaUriList = templatesDoc.xpath("/template/templateMetadataUri/text()");
+      jMetaUriList = xdmp.toJSON(metaUriList);
+    
+      workPaperIdList = templatesDoc.xpath("/template/workPaperId/text()");
+      jWorkPaperIdList = xdmp.toJSON(workPaperIdList);
+
+      var obj = {
+          id: jIdList,
+          client: jClientList,
+          workPaperId: jWorkPaperIdList,
+          user: jUserList,
+          fileUri: jUriList,
+          metadataUri: jMetaUriList
+      };
+
+      resultsDoc.push(obj);
+      
+    } else {
+    
+      templatesDoc = templates.next().value;
+      
+      idList    = templatesDoc.xpath("/template/templateId/text()").valueOf();
+      jIdList   = xdmp.toJSON(idList);
+      
+      userList  = templatesDoc.xpath("/template/user/text()").valueOf();
+      jUserList = xdmp.toJSON(userList);
+      
+      clientList  = templatesDoc.xpath("/template/client/text()").valueOf();
+      jClientList = xdmp.toJSON(clientList);
+      
+      uriList   = templatesDoc.xpath("/template/templateUri/text()").valueOf();
+      jUriList  = xdmp.toJSON(uriList);
+      
+      metaUriList = templatesDoc.xpath("/template/templateMetadataUri/text()").valueOf();
+      jMetaUriList = xdmp.toJSON(metaUriList);
+    
+      workPaperIdList = templatesDoc.xpath("/template/workPaperId/text()").valueOf();
+      jWorkPaperIdList = xdmp.toJSON(workPaperIdList);
+      
+      for (i = 0; i < count; i++)
+      {
+        var obj = {
+            id: jIdList.root[i],
+            client: jClientList.root[i],
+            workPaperId: jWorkPaperIdList.root[i],
+            user: jUserList.root[i],
+            fileUri: jUriList.root[i],
+            metadataUri: jMetaUriList.root[i]
+        };
+        
+        resultsDoc.push(obj);
+        
+      }
+    }
+  }
+
+  return resultsDoc;
 };
 
 function getUserIdFromUserFullName(fullName)

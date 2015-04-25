@@ -974,6 +974,8 @@ declare function ingest:extractSpreadsheetData(
   let $spreadSheetType := fn:tokenize($fileUri, "/") [4]
   (: let $log := xdmp:log("1............... $spreadSheetType: "||$spreadSheetType) :)
 
+  let $fileName := fn:tokenize($fileUri, "/")[fn:last()-1]
+
   let $table := map:map()
   
   let $docs :=
@@ -1141,6 +1143,7 @@ declare function ingest:extractSpreadsheetData(
         element { fn:QName($NS, "workPaperId") }    { $workPaperId },
         element { fn:QName($NS, "user") }           { $userFullName },
         element { fn:QName($NS, "version") }        { $version },
+        element { fn:QName($NS, "fileName") }       { $fileName },
         element { fn:QName($NS, "creator") }        { map:get($table, "docProps/core.xml")/core:coreProperties/dc:creator/text() },
         element { fn:QName($NS, "file") }           { $fileUri },
         element { fn:QName($NS, "lastModifiedBy") } { map:get($table, "docProps/core.xml")/core:coreProperties/core:lastModifiedBy/text() },
