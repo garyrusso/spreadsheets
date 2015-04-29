@@ -38,21 +38,21 @@ declare variable $exportOptions :=
         <element ns="http://tax.thomsonreuters.com" name="dname"/>
       </word>
     </constraint>
-    <constraint name="dvalue">
+    <constraint name="rnValue">
       <word>
-        <element ns="http://tax.thomsonreuters.com" name="dvalue"/>
+        <element ns="http://tax.thomsonreuters.com" name="rnValue"/>
       </word>
     </constraint>
-    <constraint name="dlabel">
+    <constraint name="rowLabel">
       <word>
-        <element ns="http://tax.thomsonreuters.com" name="dlabel"/>
+        <element ns="http://tax.thomsonreuters.com" name="rowLabel"/>
       </word>
     </constraint>
     <transform-results apply="snippet">
       <preferred-elements>
-        <element ns="http://tax.thomsonreuters.com" name="dname"/>
-        <element ns="http://tax.thomsonreuters.com" name="dlabel"/>
-        <element ns="http://tax.thomsonreuters.com" name="dvalue"/>
+        <element ns="http://tax.thomsonreuters.com" name="rangeName"/>
+        <element ns="http://tax.thomsonreuters.com" name="rowLabel"/>
+        <element ns="http://tax.thomsonreuters.com" name="rnValue"/>
       </preferred-elements>
     </transform-results>
     <return-results>true</return-results>
@@ -83,9 +83,9 @@ declare function tr:getResults($query as xs:string) (: as node()* :)
                   return
                     element { "field" }
                     {
-                      element { "name" } { $defName/tax:dname/text() },
-                      element { "label" } { $defName/tax:dlabel/text() },
-                      element { "value" } { $defName/tax:dvalue/text() },
+                      element { "name" } { $defName/tax:rangeName/text() },
+                      element { "label" } { $defName/tax:rowLabel/text() },
+                      element { "value" } { $defName/tax:rnValue/text() },
                       element { "sheet" } { $defName/tax:sheet/text() },
                       element { "cell" } { $defName/tax:pos/text() }
                     }

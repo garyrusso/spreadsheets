@@ -476,8 +476,9 @@ function deleteFunction(context, params) {
   context.outputStatus = [201, 'OK'];
 
   var client = "ey001";
-  var fileName, returnDoc, uri, fileId, fileUri, retStatus, doc;
-  
+  var fileName, returnDoc, uri, fileId, fileUri, retStatus, doc, workPaperId;
+  var fileNameSections, fileDir, newFileId;
+
   var paramObj = getParameters(params);
 
   retStatus = "document was not deleted";
@@ -501,6 +502,12 @@ function deleteFunction(context, params) {
     fileId = "";
   }
 
+  if (fn.stringLength(paramObj.workPaperId) > 0) {
+    workPaperId = paramObj.workPaperId;
+  } else {
+    workPaperId = "";
+  }
+
   if (fn.stringLength(fileName) > 0) {
   
       // verify file Uri
@@ -509,10 +516,10 @@ function deleteFunction(context, params) {
 
       doc = cts.doc(fileUrl);
       if (doc) {
-        fileId = doc.xpath("/*:workbook/*:meta/*:templateId/text()");
+        newFileId = doc.xpath("/*:workbook/*:meta/*:templateId/text()");
       }
 
-      if (fn.stringLength(fileId) > 0) {
+      if (fn.stringLength(newFileId) > 0) {
         xdmp.directoryDelete(fileUri);
         retStatus = "document was deleted"
       } else {
@@ -524,7 +531,6 @@ function deleteFunction(context, params) {
       // get file Uri using fileId
       fileUrl = getWorkpaperUriByTemplateId(client, fileId).metadataUri;
 
-      var fileNameSections, fileDir, newFileId;
       newFileId = "";
 
       fileNameSections = fn.tokenize(fileUrl, "/").toArray();
@@ -547,13 +553,41 @@ function deleteFunction(context, params) {
           
         }
       }
+  } else if (fn.stringLength(workPaperId) > 0) {
+    
+      // get file Uri using fileId
+      fileUrl = getWorkpaperUriByWorkpaperId(client, workPaperId).metadataUri;
+
+      newFileId = "";
+
+      fileNameSections = fn.tokenize(fileUrl, "/").toArray();
+
+      if (fileNameSections[fileNameSections.length-2]) {
+      
+        fileName = fileNameSections[fileNameSections.length-2];
+        
+        fileDir = fn.substringBefore(fileUrl, fileNameSections[fileNameSections.length-1]);
+
+        doc = cts.doc(fileUrl);
+        if (doc) {
+          newFileId = doc.xpath("/*:workbook/*:meta/*:templateId/text()");
+        }
+  
+        if (fn.stringLength(newFileId) > 0) {
+        
+          xdmp.directoryDelete(fileDir);
+          retStatus = "document was deleted"
+          
+        }
+      }
+      
   }
   
   var retObj =
   {
     status: retStatus,
     client: client,
-    fileId: fileId,
+    fileId: newFileId,
     fileName: fileName,
     fileUri: fileUri
   }
@@ -817,6 +851,9 @@ function formatResults(doc)
       clientList  = templatesDoc.xpath("/template/client/text()");
       jClientList = xdmp.toJSON(clientList);
 
+      versionList  = templatesDoc.xpath("/template/version/text()");
+      jVersionList = xdmp.toJSON(versionList);
+
       uriList   = templatesDoc.xpath("/template/templateUri/text()");
       jUriList  = xdmp.toJSON(uriList);
       
@@ -831,6 +868,7 @@ function formatResults(doc)
           client: jClientList,
           workPaperId: jWorkPaperIdList,
           user: jUserList,
+          version: jVersionList,
           fileUri: jUriList,
           metadataUri: jMetaUriList
       };
@@ -849,7 +887,10 @@ function formatResults(doc)
       
       clientList  = templatesDoc.xpath("/template/client/text()").valueOf();
       jClientList = xdmp.toJSON(clientList);
-      
+
+      versionList  = templatesDoc.xpath("/template/version/text()").valueOf();
+      jVersionList = xdmp.toJSON(versionList);
+
       uriList   = templatesDoc.xpath("/template/templateUri/text()").valueOf();
       jUriList  = xdmp.toJSON(uriList);
       
@@ -866,6 +907,7 @@ function formatResults(doc)
             client: jClientList.root[i],
             workPaperId: jWorkPaperIdList.root[i],
             user: jUserList.root[i],
+            version: jVersionList.root[i],
             fileUri: jUriList.root[i],
             metadataUri: jMetaUriList.root[i]
         };

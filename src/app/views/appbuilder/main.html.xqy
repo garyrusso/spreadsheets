@@ -72,7 +72,7 @@ declare function local:transform-snippet($nodes as node()*)
                 <tr><td width="145" valign="top">Field Name</td><td valign="top">{$node1/../tax:dname/text()}</td></tr>
                 <tr><td width="145" valign="top">Row Label</td><td valign="top">{$node1/../tax:rowLabel/text()}</td></tr>
                 <tr><td width="145" valign="top">Column Label</td><td valign="top">{$node1/../tax:columnLabel/text()}</td></tr>
-                <tr><td width="145" valign="top">Field Value</td><td valign="top">{$node1/../tax:dvalue/text()}</td></tr>
+                <tr><td width="145" valign="top">Field Value</td><td valign="top">{$node1/../tax:rnValue/text()}</td></tr>
               </table>
             },
             <hr/>

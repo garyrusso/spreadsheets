@@ -98,7 +98,7 @@ declare function ssheet:generate-simple-xl-ooxml
     xdmp:zip-create($manifest, $parts)
 };
 
-declare function ssheet:updateCellsbyDName($sheetKey as xs:string, $userData as node(), $table as map:map)
+declare function ssheet:updateCellsbyRangeName($sheetKey as xs:string, $userData as node(), $table as map:map)
 {
   (: Add code to get sheet name from workbook and workbook rels (xl/_rels/workbook.xml.rels) :)
   let $wkBook       := map:get($table, "xl/workbook.xml")
@@ -125,7 +125,7 @@ declare function ssheet:updateCellsbyDName($sheetKey as xs:string, $userData as 
             for $cnode in $row/ssml:c
               let $pos := xs:string($cnode/@r)
 
-              (: selector - is this cellPos referenced in the dname list? :)
+              (: selector - is this cellPos referenced in the rangeName list? :)
               let $newVal := $userDataCellValues/cell[pos=$pos]/val/text()
 
               let $childNodes := $cnode/ssml:*
@@ -164,13 +164,13 @@ declare function ssheet:updateCellsbyDName($sheetKey as xs:string, $userData as 
 
 declare function ssheet:getUserDataCellPosAndValue($userData as node(), $table as map:map)
 {
-  let $dnames := fn:distinct-values($userData/tax:userData/tax:feed/tax:dnames/tax:dname/tax:name/text())
+  let $rangeNames := fn:distinct-values($userData/tax:userData/tax:feed/tax:nameRefs/tax:nameRef/tax:rangeName/text())
 
   let $doc :=
     element { "cells" }
     {
-      for $dname in $dnames
-        let $cellNode := ssheet:getDNamePosAndValue($dname, $userData, $table)
+      for $rangeName in $rangeNames
+        let $cellNode := ssheet:getRangeNamePosAndValue($rangeName, $userData, $table)
         return
           $cellNode/cell
     }
@@ -178,39 +178,40 @@ declare function ssheet:getUserDataCellPosAndValue($userData as node(), $table a
   return $doc
 };
 
-declare function ssheet:getDNamePosAndValue($dname as xs:string, $userData as node(), $table as map:map)
+declare function ssheet:getRangeNamePosAndValue($rangeName as xs:string, $userData as node(), $table as map:map)
 {
-  let $dnamePositions := ssheet:getCellsbyDName($dname, $table)
-  let $cells := $dnamePositions/cells/cell
+  let $rangeNamePositions := ssheet:getCellsByRangeName($rangeName, $table)
+  let $cells := $rangeNamePositions/cells/cell
 
   let $doc :=
     element { "cells" }
     {
-      for $userVal at $n in $userData/tax:userData/tax:feed/tax:dnames/tax:dname[tax:name=$dname]
+      for $userVal at $n in $userData/tax:userData/tax:feed/tax:nameRefs/tax:nameRef[tax:rangeName=$rangeName]
         return
           element { "cell" }
           {
-            element { "pos" } { $dnamePositions/cells/cell[$n]/pos/text() },
+            element { "pos" } { $rangeNamePositions/cells/cell[$n]/pos/text() },
             element { "val" } { $userVal/tax:value/text() }
           }
     }
     
   return $doc
 };
-declare function ssheet:getCellsbyDName($dname as xs:string, $table as map:map)
+
+declare function ssheet:getCellsByRangeName($rangeName as xs:string, $table as map:map)
 {
   (: Test Cases :)
   (:
-    let $dn := "Store!$E$15:$E$21"
-    let $dn := "Store!$E$15:$I$15"
-    let $dn := "Store!$E$15:$G$21"
+    let $rangeName := "Store!$E$15:$E$21"
+    let $rangeName := "Store!$E$15:$I$15"
+    let $rangeName := "Store!$E$15:$G$21"
   :)
 
   let $wkBook        := map:get($table, "xl/workbook.xml")
-  let $dn := $wkBook/ssml:workbook/ssml:definedNames/ssml:definedName[@name=$dname]/text()
+  let $rn := $wkBook/ssml:workbook/ssml:definedNames/ssml:definedName[@name=$rangeName]/text()
 
   (: There can be multiple dname items: 'T010'!$A$1:$O$56,'T010'!$A$57:$K$77 :)
-  let $item1  := fn:tokenize($dn, ",") [1]
+  let $item1  := fn:tokenize($rn, ",") [1]
   
   (: Use item1 for now. Add multiple items later :) 
   let $sheet  := fn:replace(fn:tokenize($item1, "!") [1], "'", "")
@@ -230,7 +231,7 @@ declare function ssheet:getCellsbyDName($dname as xs:string, $table as map:map)
   let $row2   := fn:tokenize($pos2, "[A-Za-z]+") [2]
 
   let $doc :=
-    element { "dnameInfo" }
+    element { "rangeNameInfo" }
     {
       element { "wksheet" }  { $sheet },
       element { "cells" }
@@ -346,7 +347,7 @@ declare function ssheet:createSpreadsheetFileAndApplyUserData($excelUri as xs:st
   let $relsRels      := map:get($table, "_rels/.rels")
   let $printerBinDoc := xdmp:zip-get($excelFile, "xl/printerSettings/printerSettings1.bin")
 
-  let $newSheet1 := ssheet:updateCellsbyDName("xl/worksheets/sheet1.xml", $userData, $table)
+  let $newSheet1 := ssheet:updateCellsbyRangeName("xl/worksheets/sheet1.xml", $userData, $table)
 
   (: GR001: Temp Fix for calcChain Error on File Open :)
   let $calcChain1 := document { element { fn:QName($SSMLNS, "calcChain") } { element { fn:QName($SSMLNS, "c") } { attribute { "r" } { "H3" }, attribute { "i" } { "1" } } } }

@@ -217,38 +217,6 @@
         <range-element-index>
           <scalar-type>string</scalar-type>
           <namespace-uri>http://tax.thomsonreuters.com</namespace-uri>
-          <localname>importedUnitCode</localname>
-          <collation>http://marklogic.com/collation/</collation>
-          <range-value-positions>false</range-value-positions>
-          <invalid-values>ignore</invalid-values>
-        </range-element-index>
-        <range-element-index>
-          <scalar-type>string</scalar-type>
-          <namespace-uri>http://tax.thomsonreuters.com</namespace-uri>
-          <localname>importedAccountCode</localname>
-          <collation>http://marklogic.com/collation/</collation>
-          <range-value-positions>false</range-value-positions>
-          <invalid-values>reject</invalid-values>
-        </range-element-index>
-        <range-element-index>
-          <scalar-type>float</scalar-type>
-          <namespace-uri>http://tax.thomsonreuters.com</namespace-uri>
-          <localname>beginningBalance</localname>
-          <collation/>
-          <range-value-positions>false</range-value-positions>
-          <invalid-values>reject</invalid-values>
-        </range-element-index>
-        <range-element-index>
-          <scalar-type>float</scalar-type>
-          <namespace-uri>http://tax.thomsonreuters.com</namespace-uri>
-          <localname>endingBalance</localname>
-          <collation/>
-          <range-value-positions>false</range-value-positions>
-          <invalid-values>reject</invalid-values>
-        </range-element-index>
-        <range-element-index>
-          <scalar-type>string</scalar-type>
-          <namespace-uri>http://tax.thomsonreuters.com</namespace-uri>
           <localname>type</localname>
           <collation>http://marklogic.com/collation/</collation>
           <range-value-positions>false</range-value-positions>
@@ -257,7 +225,7 @@
         <range-element-index>
           <scalar-type>string</scalar-type>
           <namespace-uri>http://tax.thomsonreuters.com</namespace-uri>
-          <localname>dname</localname>
+          <localname>client</localname>
           <collation>http://marklogic.com/collation/</collation>
           <range-value-positions>false</range-value-positions>
           <invalid-values>reject</invalid-values>
@@ -265,7 +233,15 @@
         <range-element-index>
           <scalar-type>string</scalar-type>
           <namespace-uri>http://tax.thomsonreuters.com</namespace-uri>
-          <localname>dlabel</localname>
+          <localname>rangeName</localname>
+          <collation>http://marklogic.com/collation/</collation>
+          <range-value-positions>false</range-value-positions>
+          <invalid-values>reject</invalid-values>
+        </range-element-index>
+        <range-element-index>
+          <scalar-type>string</scalar-type>
+          <namespace-uri>http://tax.thomsonreuters.com</namespace-uri>
+          <localname>rangeLabel</localname>
           <collation>http://marklogic.com/collation/</collation>
           <range-value-positions>false</range-value-positions>
           <invalid-values>reject</invalid-values>

@@ -167,12 +167,13 @@ declare function slib:formatListResults($results as document-node()*)
         return
           element { "template" }
           {
-            element { "templateId" } { $result/tax:workbook/tax:meta/tax:templateId/text() },
-            element { "workPaperId" } { $result/tax:workbook/tax:meta/tax:workPaperId/text() },
-            element { "templateUri" } { $result/tax:workbook/tax:meta/tax:file/text() },
+            element { "templateId" }          { $result/tax:workbook/tax:meta/tax:templateId/text() },
+            element { "workPaperId" }         { $result/tax:workbook/tax:meta/tax:workPaperId/text() },
+            element { "templateUri" }         { $result/tax:workbook/tax:meta/tax:file/text() },
             element { "templateMetadataUri" } { xdmp:node-uri($result) },
-            element { "user" } { $result/tax:workbook/tax:meta/tax:user/text() },
-            element { "client" } { $result/tax:workbook/tax:meta/tax:client/text() }
+            element { "client" }              { $result/tax:workbook/tax:meta/tax:client/text() },
+            element { "user" }                { $result/tax:workbook/tax:meta/tax:user/text() },
+            element { "version" }             { $result/tax:workbook/tax:meta/tax:version/text() }
           }
     }
 

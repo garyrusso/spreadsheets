@@ -74,44 +74,6 @@ declare variable $c:REST-SEARCH-OPTIONS :=
     <term>
       <term-option>case-insensitive</term-option>
     </term>
-    <constraint name="ImportedUnitCodes">
-      <range type="xs:string">
-        <bucket ge="RU01501" name="RU-1500s">RU-1500s</bucket>
-        <bucket lt="RU01501" ge="RU01001" name="RU-1000s">RU-1000s</bucket>
-        <bucket lt="RU01001" ge="RU00501" name="RU-500s">RU-500s</bucket>
-        <bucket lt="RU00501" name="RU-0s">RU-0s</bucket>
-        <element ns="http://tax.thomsonreuters.com" name="importedUnitCode"/>
-        <facet-option>descending</facet-option>
-        <facet-option>limit=10</facet-option>
-      </range>
-    </constraint>
-    <constraint name="ImportedAccountCodes">
-      <range type="xs:string">
-        <bucket ge="AC01501" name="AC-1500s">AC-1500s</bucket>
-        <bucket lt="AC01501" ge="AC01001" name="AC-1000s">AC-1000s</bucket>
-        <bucket lt="AC01001" ge="AC00501" name="AC-500s">AC-500s</bucket>
-        <bucket lt="AC00501" name="AC-0s">AC-0s</bucket>
-        <element ns="http://tax.thomsonreuters.com" name="importedAccountCode"/>
-        <facet-option>descending</facet-option>
-        <facet-option>limit=10</facet-option>
-      </range>
-    </constraint>
-    <constraint name="EndingBalances">
-      <range type="xs:float">
-        <bucket ge="9000" name="9000s">9000s</bucket>
-        <bucket lt="9000" ge="8000" name="8000s">8000s</bucket>
-        <bucket lt="8000" ge="7000" name="7000s">7000s</bucket>
-        <bucket lt="7000" ge="6000" name="6000s">6000s</bucket>
-        <bucket lt="6000" ge="5000" name="5000s">5000s</bucket>
-        <bucket lt="5000" ge="4000" name="4000s">4000s</bucket>
-        <bucket lt="4000" ge="3000" name="3000s">3000s</bucket>
-        <bucket lt="3000" ge="2000" name="2000s">2000s</bucket>
-        <bucket lt="1000" name="1000s">1000s</bucket>
-        <element ns="http://tax.thomsonreuters.com" name="endingBalance"/>
-        <facet-option>descending</facet-option>
-        <facet-option>limit=10</facet-option>
-      </range>
-    </constraint>
     <constraint name="types">
       <range type="xs:string">
         <element ns="http://tax.thomsonreuters.com" name="type"/>
@@ -126,9 +88,9 @@ declare variable $c:REST-SEARCH-OPTIONS :=
         <facet-option>limit=10</facet-option>
       </range>
     </constraint>
-    <constraint name="dnames">
+    <constraint name="rangeNames">
       <range type="xs:string">
-        <element ns="http://tax.thomsonreuters.com" name="dname"/>
+        <element ns="http://tax.thomsonreuters.com" name="rangeName"/>
         <facet-option>descending</facet-option>
         <facet-option>limit=10</facet-option>
       </range>
@@ -136,26 +98,6 @@ declare variable $c:REST-SEARCH-OPTIONS :=
     <constraint name="id">
       <word>
         <element ns="http://tax.thomsonreuters.com" name="id"/>
-      </word>
-    </constraint>
-    <constraint name="importedUnitCode">
-      <word>
-        <element ns="http://tax.thomsonreuters.com" name="importedUnitCode"/>
-      </word>
-    </constraint>
-    <constraint name="importedAccountCode">
-      <word>
-        <element ns="http://tax.thomsonreuters.com" name="importedAccountCode"/>
-      </word>
-    </constraint>
-    <constraint name="beginningBalance">
-      <word>
-        <element ns="http://tax.thomsonreuters.com" name="beginningBalance"/>
-      </word>
-    </constraint>
-    <constraint name="endingBalance">
-      <word>
-        <element ns="http://tax.thomsonreuters.com" name="endingBalance"/>
       </word>
     </constraint>
     <constraint name="type">
@@ -168,25 +110,22 @@ declare variable $c:REST-SEARCH-OPTIONS :=
         <element ns="http://tax.thomsonreuters.com" name="user"/>
       </word>
     </constraint>
-    <constraint name="dname">
+    <constraint name="rangeName">
       <word>
-        <element ns="http://tax.thomsonreuters.com" name="dname"/>
+        <element ns="http://tax.thomsonreuters.com" name="rangeName"/>
       </word>
     </constraint>
-    <constraint name="dvalue">
+    <constraint name="rnValue">
       <word>
-        <element ns="http://tax.thomsonreuters.com" name="dvalue"/>
+        <element ns="http://tax.thomsonreuters.com" name="rnValue"/>
       </word>
     </constraint>
     <transform-results ns="http://marklogic.com/roxy/lib/origin-lib" apply="rest-origin-snippet" at="/app/lib/origin-lib.xqy">
       <preferred-elements>
         <element ns="http://tax.thomsonreuters.com" name="type"/>
         <element ns="http://tax.thomsonreuters.com" name="id"/>
-        <element ns="http://tax.thomsonreuters.com" name="importFileId"/>
-        <element ns="http://tax.thomsonreuters.com" name="importedUnitCode"/>
-        <element ns="http://tax.thomsonreuters.com" name="importedAccountCode"/>
-        <element ns="http://tax.thomsonreuters.com" name="beginningBalance"/>
-        <element ns="http://tax.thomsonreuters.com" name="endingBalance"/>
+        <element ns="http://tax.thomsonreuters.com" name="user"/>
+        <element ns="http://tax.thomsonreuters.com" name="client"/>
       </preferred-elements>
     </transform-results>
     <return-results>true</return-results>
@@ -229,9 +168,9 @@ declare variable $c:SEARCH-OPTIONS :=
         <facet-option>limit=5</facet-option>
       </range>
     </constraint>
-    <constraint name="dnames">
+    <constraint name="rangeNames">
       <range type="xs:string">
-        <element ns="http://tax.thomsonreuters.com" name="dname"/>
+        <element ns="http://tax.thomsonreuters.com" name="rangeName"/>
         <facet-option>descending</facet-option>
         <facet-option>limit=20</facet-option>
       </range>
@@ -256,14 +195,14 @@ declare variable $c:SEARCH-OPTIONS :=
         <element ns="http://tax.thomsonreuters.com" name="user"/>
       </word>
     </constraint>
-    <constraint name="dname">
+    <constraint name="rangeName">
       <word>
-        <element ns="http://tax.thomsonreuters.com" name="dname"/>
+        <element ns="http://tax.thomsonreuters.com" name="rangeName"/>
       </word>
     </constraint>
-    <constraint name="dvalue">
+    <constraint name="rnValue">
       <word>
-        <element ns="http://tax.thomsonreuters.com" name="dvalue"/>
+        <element ns="http://tax.thomsonreuters.com" name="rnValue"/>
       </word>
     </constraint>
     <transform-results apply="snippet">
@@ -272,7 +211,7 @@ declare variable $c:SEARCH-OPTIONS :=
         <element ns="http://tax.thomsonreuters.com" name="user"/>
         <element ns="http://tax.thomsonreuters.com" name="rowLabel"/>
         <element ns="http://tax.thomsonreuters.com" name="columnLabel"/>
-        <element ns="http://tax.thomsonreuters.com" name="dname"/>
+        <element ns="http://tax.thomsonreuters.com" name="rangeName"/>
       </preferred-elements>
     </transform-results>
     <operator name="results">
@@ -284,7 +223,7 @@ declare variable $c:SEARCH-OPTIONS :=
             <element ns="http://tax.thomsonreuters.com" name="user"/>
             <element ns="http://tax.thomsonreuters.com" name="rowLabel"/>
             <element ns="http://tax.thomsonreuters.com" name="columnLabel"/>
-            <element ns="http://tax.thomsonreuters.com" name="dname"/>
+            <element ns="http://tax.thomsonreuters.com" name="rangeName"/>
           </preferred-elements>
           <per-match-tokens>30</per-match-tokens>
           <max-matches>4</max-matches>
@@ -299,7 +238,7 @@ declare variable $c:SEARCH-OPTIONS :=
             <element ns="http://tax.thomsonreuters.com" name="user"/>
             <element ns="http://tax.thomsonreuters.com" name="rowLabel"/>
             <element ns="http://tax.thomsonreuters.com" name="columnLabel"/>
-            <element ns="http://tax.thomsonreuters.com" name="dname"/>
+            <element ns="http://tax.thomsonreuters.com" name="rangeName"/>
           </preferred-elements>
           <per-match-tokens>30</per-match-tokens>
           <max-matches>4</max-matches>
@@ -316,8 +255,8 @@ declare variable $c:SEARCH-OPTIONS :=
  :)
 declare variable $c:LABELS :=
   <labels xmlns="http://marklogic.com/xqutils/labels">
-    <label key="dname">
-      <value xml:lang="en">Defined Name</value>
+    <label key="rangeName">
+      <value xml:lang="en">Range Name</value>
     </label>
     <label key="type">
       <value xml:lang="en">Type</value>

@@ -84,7 +84,7 @@ This app will show the following.
         <td valign="top">/import</td>
         <td valign="top">
 		<table>
-			<tr><td valign="top">rs:q</td><td>query string<hr/>Uses rich search grammar.<br/><br/>Examples:<br/><pre>dname:ThisYr OR dname:AMOUNT*4</pre><pre>dvalue:?77</pre></td></tr>
+			<tr><td valign="top">rs:q</td><td>query string<hr/>Uses rich search grammar.<br/><br/>Examples:<br/><pre>dname:ThisYr OR dname:AMOUNT*4</pre><pre>rnValue:?77</pre></td></tr>
 			<tr><td valign="top">rs:txid</td><td>txid (optional)</td></tr>
 		</table>
 		</td>

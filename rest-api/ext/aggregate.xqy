@@ -19,7 +19,7 @@ declare function tr:getAllFieldValues($field as xs:string) (: as node()* :)
   let $results := cts:search(fn:doc(), $query)
   
   return
-    xs:integer($results/tax:workbook/tax:feed/tax:definedNames/tax:definedName[tax:dname=$field]/tax:dvalue)
+    xs:integer($results/tax:workbook/tax:feed/tax:definedNames/tax:definedName[tax:dname=$field]/tax:rnValue)
 };
 
 (:
@@ -50,7 +50,7 @@ declare function tr:getFieldValuesByUser($field as xs:string, $user as xs:string
   let $results := cts:search(fn:doc(), $query)
   
   return
-    xs:integer($results/tax:workbook/tax:feed/tax:definedNames/tax:definedName[tax:dname=$field]/tax:dvalue)
+    xs:integer($results/tax:workbook/tax:feed/tax:definedNames/tax:definedName[tax:dname=$field]/tax:rnValue)
 };
 
 (:

@@ -72,7 +72,7 @@
                     <table border="1" width="100%">
                       <tr>
                         <td width="20%" bgcolor="#E8ECED" valign="top">Name</td>
-                        <td width="80%"><xsl:value-of select="_1:dname"/></td>
+                        <td width="80%"><xsl:value-of select="_1:rangeName"/></td>
                       </tr>
                       <tr>
                         <td width="20%" bgcolor="#E8ECED" valign="top">Row Label</td>
@@ -84,7 +84,7 @@
                       </tr>
                       <tr>
                         <td width="20%" bgcolor="#E8ECED" valign="top">Defined Value</td>
-                        <td width="80%"><xsl:value-of select="_1:dvalue"/></td>
+                        <td width="80%"><xsl:value-of select="_1:rnValue"/></td>
                       </tr>
                       <tr>
                         <td width="20%" bgcolor="#E8ECED" valign="top">Worksheet</td>
