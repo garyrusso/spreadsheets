@@ -827,10 +827,12 @@ declare function ingest:expansionElement($dn as node(), $row as xs:string, $col 
   let $newPos      := $col||$row
   let $sheetName   := $dn/tax:sheet/text()
   let $rangeName   := $dn/tax:rangeName/text()
+(:
   let $rowLabel    := ingest:findRowLabel($row, $col, $sheetName, $table)
   let $columnLabel := ingest:findColumnLabel($row, $col, $sheetName, $table)
   let $newValue    := ingest:getValue($row, $col, $sheetName, $table)
-  
+:)
+
   let $rowLabel    := ingest:findRowLabel(xs:string($row), $col, $sheetName, $table)
   let $columnLabel := ingest:findColumnLabel(xs:string($row), $col, $sheetName, $table)
   let $newValue    := ingest:getValue(xs:string($row), $col, $sheetName, $table)
@@ -1045,48 +1047,9 @@ declare function ingest:extractSpreadsheetData(
         element { fn:QName($NS, "nameRefs") }
         {
           for $nameRef in $nameRefs
-            let $att    := xs:string($nameRef/@name)
-            
-            (: There can be multiple rangeName items: 'T010'!$A$1:$O$56,'T010'!$A$57:$K$77 :)
-            let $item1  := fn:tokenize($nameRef/text(), ",") [1]
-            
-            (: Use item1 for now. Add support for multiple items later :) 
-            let $sheet  := fn:replace(fn:tokenize($item1, "!") [1], "'", "")
-
-            let $cell   := fn:tokenize($item1, "!") [2]
-            let $pos    := fn:replace($cell, "\$", "")
-            
-            let $pos1   := fn:tokenize($pos, ":") [1]
-            let $pos2   := fn:tokenize($pos, ":") [2]
-            
-            let $col    := fn:tokenize($pos1, "[0-9]") [1]
-            
-            let $col1 := fn:tokenize($pos1, "[\d]+")[1]
-            let $col2 := fn:tokenize($pos2, "[\d]+")[1]
-
-            let $row1   := fn:tokenize($pos1, "[A-Za-z]+") [2]
-            let $row2   := fn:tokenize($pos2, "[A-Za-z]+") [2]
-
-            let $lblCol      := $col1
-            let $val         := ingest:getValue($row1, $col1, $sheet, $table)
-            let $rowLabel    := ingest:findRowLabel($row1, $col1, $sheet, $table)
-            let $columnLabel := ingest:findColumnLabel($row1, $col1, $sheet, $table)
-              where fn:not(fn:starts-with($att, "_")) and fn:empty($nameRef/@hidden)
-                return
-                  element { fn:QName($NS, "nameRef") }
-                  {
-                    element { fn:QName($NS, "rangeName") }   { $att },
-                    element { fn:QName($NS, "rowLabel") }    { $rowLabel },
-                    element { fn:QName($NS, "columnLabel") } { $columnLabel },
-                    element { fn:QName($NS, "sheet") }       { $sheet },
-                    element { fn:QName($NS, "col1") }        { $col1 },
-                    element { fn:QName($NS, "row1") }        { $row1 },
-                    element { fn:QName($NS, "pos1") }        { $pos1 },
-                    element { fn:QName($NS, "col2") }        { $col2 },
-                    element { fn:QName($NS, "row2") }        { $row2 },
-                    element { fn:QName($NS, "pos2") }        { $pos2 },
-                    element { fn:QName($NS, "rnValue") }     { $val }
-                  }
+            where fn:not(fn:starts-with(xs:string($nameRef/@name), "_")) and fn:empty($nameRef/@hidden)
+              return
+                ingest:getNameRefInfo($nameRef, $table)
         }
 
   let $rnExpansionDoc := ingest:expandDoc($nameRefPass1Doc, $table)
@@ -1132,18 +1095,36 @@ declare function ingest:extractSpreadsheetData(
     else
       xdmp:hash64($workSheets)
 
+  let $state                        := ingest:getNameRefInfo($nameRefs[@name="State"], $table)/tax:rnValue/text()
+  let $country                      := ingest:getNameRefInfo($nameRefs[@name="Country"], $table)/tax:rnValue/text()
+  let $filingEntity                 := ingest:getNameRefInfo($nameRefs[@name="FilingEntity"], $table)/tax:rnValue/text()
+  let $fiscalYear                   := ingest:getNameRefInfo($nameRefs[@name="FiscalYear"], $table)/tax:rnValue/text()
+  
+  let $averageVariance              := fn:abs(fn:round(ingest:getNameRefInfo($nameRefs[@name="AverageProvisionVariance"], $table)/tax:rnValue/text() * 100))
+  let $preTaxBookIncomeVariance     := fn:abs(fn:round(ingest:getNameRefInfo($nameRefs[@name="PreTaxBookIncomeVariance"], $table)/tax:rnValue/text() * 100))
+  let $returnBasisProvisionVariance := fn:abs(fn:round(ingest:getNameRefInfo($nameRefs[@name="ReturnBasisProvisionVariance"], $table)/tax:rnValue/text() * 100))
+  let $taxableIncomeVariance        := fn:abs(fn:round(ingest:getNameRefInfo($nameRefs[@name="TaxableIncomeVariance"], $table)/tax:rnValue/text() * 100))
+
   let $doc :=
     element { fn:QName($NS, "workbook") }
     {
       element { fn:QName($NS, "meta") }
       {
-        element { fn:QName($NS, "type") }           { $spreadSheetType },
-        element { fn:QName($NS, "client") }         { $client },
-        element { fn:QName($NS, "templateId") }     { $templateId },
-        element { fn:QName($NS, "workPaperId") }    { $workPaperId },
-        element { fn:QName($NS, "user") }           { $userFullName },
-        element { fn:QName($NS, "version") }        { $version },
-        element { fn:QName($NS, "fileName") }       { $fileName },
+        element { fn:QName($NS, "type") }                         { $spreadSheetType },
+        element { fn:QName($NS, "client") }                       { $client },
+        element { fn:QName($NS, "state") }                        { $state },
+        element { fn:QName($NS, "country") }                      { $country },
+        element { fn:QName($NS, "filingEntity") }                 { $filingEntity },
+        element { fn:QName($NS, "fiscalYear") }                   { $fiscalYear },
+        element { fn:QName($NS, "averageVariance") }              { $averageVariance },
+        element { fn:QName($NS, "preTaxBookIncomeVariance") }     { $preTaxBookIncomeVariance },
+        element { fn:QName($NS, "returnBasisProvisionVariance") } { $returnBasisProvisionVariance },
+        element { fn:QName($NS, "taxableIncomeVariance") }        { $taxableIncomeVariance },
+        element { fn:QName($NS, "templateId") }                   { $templateId },
+        element { fn:QName($NS, "workPaperId") }                  { $workPaperId },
+        element { fn:QName($NS, "user") }                         { $userFullName },
+        element { fn:QName($NS, "version") }                      { $version },
+        element { fn:QName($NS, "fileName") }                     { $fileName },
         element { fn:QName($NS, "creator") }        { map:get($table, "docProps/core.xml")/core:coreProperties/dc:creator/text() },
         element { fn:QName($NS, "file") }           { $fileUri },
         element { fn:QName($NS, "lastModifiedBy") } { map:get($table, "docProps/core.xml")/core:coreProperties/core:lastModifiedBy/text() },
@@ -1155,6 +1136,55 @@ declare function ingest:extractSpreadsheetData(
         $newNameRefDoc,
         $workSheets
       }
+    }
+
+  return $doc
+};
+
+(:
+:)
+declare function ingest:getNameRefInfo($nameRef, $table)
+{
+  let $rangeName := xs:string($nameRef/@name)
+  
+  (: There can be multiple rangeName items: 'T010'!$A$1:$O$56,'T010'!$A$57:$K$77 :)
+  let $item1  := fn:tokenize($nameRef, ",") [1]
+  
+  (: Use item1 for now. Add support for multiple items later :) 
+  let $sheet  := fn:replace(fn:tokenize($item1, "!") [1], "'", "")
+  
+  let $cell   := fn:tokenize($item1, "!") [2]
+  let $pos    := fn:replace($cell, "\$", "")
+  
+  let $pos1   := fn:tokenize($pos, ":") [1]
+  let $pos2   := fn:tokenize($pos, ":") [2]
+  
+  let $col    := fn:tokenize($pos1, "[0-9]") [1]
+  
+  let $col1 := fn:tokenize($pos1, "[\d]+")[1]
+  let $col2 := fn:tokenize($pos2, "[\d]+")[1]
+  
+  let $row1   := fn:tokenize($pos1, "[A-Za-z]+") [2]
+  let $row2   := fn:tokenize($pos2, "[A-Za-z]+") [2]
+  
+  let $val         := ingest:getValue($row1, $col1, $sheet, $table)
+  let $rowLabel    := ingest:findRowLabel($row1, $col1, $sheet, $table)
+  let $columnLabel := ingest:findColumnLabel($row1, $col1, $sheet, $table)
+
+  let $doc :=
+    element { fn:QName($NS, "nameRef") }
+    {
+      element { fn:QName($NS, "rangeName") }   { $rangeName },
+      element { fn:QName($NS, "rowLabel") }    { $rowLabel },
+      element { fn:QName($NS, "columnLabel") } { $columnLabel },
+      element { fn:QName($NS, "sheet") }       { $sheet },
+      element { fn:QName($NS, "col1") }        { $col1 },
+      element { fn:QName($NS, "row1") }        { $row1 },
+      element { fn:QName($NS, "pos1") }        { $pos1 },
+      element { fn:QName($NS, "col2") }        { $col2 },
+      element { fn:QName($NS, "row2") }        { $row2 },
+      element { fn:QName($NS, "pos2") }        { $pos2 },
+      element { fn:QName($NS, "rnValue") }     { $val }
     }
 
   return $doc
@@ -1251,48 +1281,9 @@ declare function ingest:extractGeneratedSpreadsheetData(
         element { fn:QName($NS, "nameRefs") }
         {
           for $nameRef in $nameRefs
-            let $att    := xs:string($nameRef/@name)
-            
-            (: There can be multiple rangeName items: 'T010'!$A$1:$O$56,'T010'!$A$57:$K$77 :)
-            let $item1  := fn:tokenize($nameRef/text(), ",") [1]
-            
-            (: Use item1 for now. Add multiple items later :) 
-            let $sheet  := fn:replace(fn:tokenize($item1, "!") [1], "'", "")
-
-            let $cell   := fn:tokenize($item1, "!") [2]
-            let $pos    := fn:replace($cell, "\$", "")
-            
-            let $pos1   := fn:tokenize($pos, ":") [1]
-            let $pos2   := fn:tokenize($pos, ":") [2]
-            
-            let $col    := fn:tokenize($pos1, "[0-9]") [1]
-            
-            let $col1 := fn:tokenize($pos1, "[\d]+")[1]
-            let $col2 := fn:tokenize($pos2, "[\d]+")[1]
-
-            let $row1   := fn:tokenize($pos1, "[A-Za-z]+") [2]
-            let $row2   := fn:tokenize($pos2, "[A-Za-z]+") [2]
-            
-            let $lblCol      := $col1
-            let $val         := ingest:getValue($row1, $col1, $sheet, $table)
-            let $rowLabel    := ingest:findRowLabel($row1, $col1, $sheet, $table)
-            let $columnLabel := ingest:findColumnLabel($row1, $col1, $sheet, $table)
-              where fn:not(fn:starts-with($att, "_")) and fn:empty($nameRef/@hidden)
-                return
-                  element { fn:QName($NS, "nameRef") }
-                  {
-                    element { fn:QName($NS, "rangeName") }   { $att },
-                    element { fn:QName($NS, "rowLabel") }    { $rowLabel },
-                    element { fn:QName($NS, "columnLabel") } { $columnLabel },
-                    element { fn:QName($NS, "sheet") }       { $sheet },
-                    element { fn:QName($NS, "col1") }        { $col1 },
-                    element { fn:QName($NS, "row1") }        { $row1 },
-                    element { fn:QName($NS, "pos1") }        { $pos1 },
-                    element { fn:QName($NS, "col2") }        { $col2 },
-                    element { fn:QName($NS, "row2") }        { $row2 },
-                    element { fn:QName($NS, "pos2") }        { $pos2 },
-                    element { fn:QName($NS, "rnValue") }     { $val }
-                  }
+            where fn:not(fn:starts-with(xs:string($nameRef/@name), "_")) and fn:empty($nameRef/@hidden)
+              return
+                ingest:getNameRefInfo($nameRef, $table)
         }
 
   let $nameRefExpansionDoc := ingest:expandDoc($nameRefPass1Doc, $table)

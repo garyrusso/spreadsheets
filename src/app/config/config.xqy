@@ -154,6 +154,27 @@ declare variable $c:SEARCH-OPTIONS :=
         <facet-option>limit=10</facet-option>
       </range>
     </constraint>
+    <constraint name="country">
+      <range type="xs:string">
+        <element ns="http://tax.thomsonreuters.com" name="country"/>
+        <facet-option>descending</facet-option>
+        <facet-option>limit=10</facet-option>
+      </range>
+    </constraint>
+    <constraint name="filingEntity">
+      <range type="xs:string">
+        <element ns="http://tax.thomsonreuters.com" name="filingEntity"/>
+        <facet-option>descending</facet-option>
+        <facet-option>limit=10</facet-option>
+      </range>
+    </constraint>
+    <constraint name="fiscalYear">
+      <range type="xs:string">
+        <element ns="http://tax.thomsonreuters.com" name="fiscalYear"/>
+        <facet-option>descending</facet-option>
+        <facet-option>limit=10</facet-option>
+      </range>
+    </constraint>
     <constraint name="users">
       <range type="xs:string">
         <element ns="http://tax.thomsonreuters.com" name="user"/>

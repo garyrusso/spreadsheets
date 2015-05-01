@@ -31,7 +31,7 @@ function get(context, params) {
   if (fn.stringLength(paramObj.client) > 0) {
     client = paramObj.client;
   } else {
-    client = "ey001";
+    client = "*";
   }
   
   if (fn.stringLength(paramObj.fileName) > 0) {
@@ -376,6 +376,8 @@ function post(context, params, input) {
   context.outputTypes = [];
   context.outputStatus = [200, 'OK'];
 
+//  xdmp.log("1................  fileName: " + context.headers.getFirst("Content-Disposition"));
+
   var userObj = getUserInfo();
 
   var binDoc = normalizeInput(input);
@@ -391,13 +393,13 @@ function post(context, params, input) {
   if (fn.stringLength(paramObj.workPaperId) > 0) {
     workPaperId = paramObj.workPaperId;
   } else {
-    workPaperId = "";
+    workPaperId = xdmp.random(100000);
   }
   
   if (fn.stringLength(paramObj.version) > 0) {
     version = paramObj.version;
   } else {
-    version = "";
+    version = "0.1";
   }
   
   if (fn.stringLength(paramObj.client) > 0) {
@@ -406,18 +408,18 @@ function post(context, params, input) {
     client = "ey001";
   }
 
-  if (fn.stringLength(paramObj.fileName) > 0) {
-    fileName = paramObj.fileName;
-  } else {
-    fileName = "";
-  }
-
   if (fn.stringLength(paramObj.user) > 0) {
     userFullName = paramObj.user;
     user         = getUserIdFromUserFullName(userFullName);
   } else {
     userFullName = userObj.userFullName.valueOf();
     user         = userObj.user.valueOf();
+  }
+
+  if (fn.stringLength(paramObj.fileName) > 0) {
+    fileName = paramObj.fileName;
+  } else {
+    fileName = user + "-" + workPaperId;
   }
 
   fileDir = "/client/" + client + "/wpaper";
