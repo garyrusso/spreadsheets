@@ -7,6 +7,9 @@ import module namespace ingest = "http://marklogic.com/roxy/lib/ingest" at "/app
 import module namespace mem    = "http://xqdev.com/in-mem-update" at '/MarkLogic/appservices/utils/in-mem-update.xqy';
 (: import module namespace json   = "http://marklogic.com/xdmp/json" at "/MarkLogic/json/json.xqy"; :)
 
+import module namespace search = "http://marklogic.com/appservices/search" at "/MarkLogic/appservices/search/search.xqy";
+import module namespace c      = "http://marklogic.com/roxy/config" at "/app/config/config.xqy";
+
 declare namespace tax  = "http://tax.thomsonreuters.com";
 
 declare namespace zip     = "xdmp:zip";
@@ -157,6 +160,30 @@ declare function slib:formatResults($results)
 
 (:
  :)
+declare function slib:formatSearchResults($response)
+{
+  let $results := $response/search:result
+
+  let $doc :=
+    element { "list" }
+    {
+      element { "count" } { xs:string($response/@total) },
+      for $result in $results
+        return
+          element { "workPaper" }
+          {
+            element { "workPaperId" } { $result/search:snippet/tax:workPaperId/text() },
+            element { "user" }        { $result/search:snippet/tax:user/text() },
+            element { "type" }        { $result/search:snippet/tax:type/text() },
+            element { "uri" }         { xs:string($result/@uri) }
+          }
+    }
+
+  return $doc
+};
+
+(:
+ :)
 declare function slib:formatListResults($results as document-node()*)
 {
   let $doc :=
@@ -241,7 +268,7 @@ declare function slib:getSpreadsheetListByClient($client as xs:string, $type)
   return $results
 };
 
-declare function slib:getWorkpaperListByClientByQstring($client as xs:string, $q as xs:string)
+declare function slib:getWorkpaperListByClientByQstring1($client as xs:string, $q as xs:string)
 {
   let $query := cts:and-query((
                   cts:collection-query(("spreadsheet")),
@@ -253,6 +280,16 @@ declare function slib:getWorkpaperListByClientByQstring($client as xs:string, $q
   let $results := cts:search(fn:doc(), $query)
   
   return slib:formatListResults($results)
+};
+
+declare function slib:getWorkpaperListByClientByQstring($client as xs:string, $q as xs:string, $start as xs:unsignedLong?, $pageLength as xs:unsignedLong?)
+{
+  let $options := $c:REST-SEARCH-OPTIONS
+
+  let $response := search:search($q, $options, $start, $pageLength)
+
+  return
+    slib:formatSearchResults($response)
 };
 
 (:

@@ -808,7 +808,10 @@ function getWorkpaperListByClient(client)
 
 function getWorkpaperListByClientByQstring(client, qString)
 {
-  var doc = slib.getWorkpaperListByClientByQstring(client, qString);
+  var start      = 1;
+  var pageLength = 10;
+  
+  var doc = slib.getWorkpaperListByClientByQstring(client, qString, start, pageLength);
   
   var count = doc.xpath("/count/text()");
 
@@ -816,10 +819,79 @@ function getWorkpaperListByClientByQstring(client, qString)
     count: count,
     client: client,
     search: qString,
-    results: formatResults(doc)
+    results: formatSearchResults(doc)
   };
 
   return retObj;
+};
+
+function formatSearchResults(doc)
+{
+  var count, workPapers, workPapersDoc;
+
+  var clientList, jClientList;
+  var idList, jIdList;
+  var userList, jUserList;
+  var uriList, jUriList;
+  var metaUriList, jMetaUriList;
+  var workPaperIdList, jWorkPaperIdList;
+
+  count = doc.xpath("/count/text()");
+  workPapers = doc.xpath("/workPaper");
+
+  var resultsDoc = [];
+
+  if (count > 0) {
+  
+    if (count == 1) {
+
+      workPapersDoc = workPapers.next().value.valueOf();
+
+      workPaperIdList  = workPapersDoc.xpath("/workPaper/workPaperId/text()");
+      jWorkPaperIdList = xdmp.toJSON(workPaperIdList);
+
+      userList  = workPapersDoc.xpath("/workPaper/user/text()");
+      jUserList = xdmp.toJSON(userList);
+
+      uriList   = workPapersDoc.xpath("/workPaper/uri/text()");
+      jUriList  = xdmp.toJSON(uriList);
+      
+      var obj = {
+          workPaperId: jWorkPaperIdList,
+          user: jUserList,
+          fileUri: jUriList
+      };
+
+      resultsDoc.push(obj);
+      
+    } else {
+    
+      workPapersDoc = workPapers.next().value;
+      
+      userList  = workPapersDoc.xpath("/workPaper/user/text()").valueOf();
+      jUserList = xdmp.toJSON(userList);
+      
+      uriList   = workPapersDoc.xpath("/workPaper/uri/text()").valueOf();
+      jUriList  = xdmp.toJSON(uriList);
+      
+      workPaperIdList = workPapersDoc.xpath("/workPaper/workPaperId/text()").valueOf();
+      jWorkPaperIdList = xdmp.toJSON(workPaperIdList);
+      
+      for (i = 0; i < count; i++)
+      {
+        var obj = {
+            workPaperId: jWorkPaperIdList.root[i],
+            user: jUserList.root[i],
+            fileUri: jUriList.root[i]
+        };
+        
+        resultsDoc.push(obj);
+        
+      }
+    }
+  }
+
+  return resultsDoc;
 };
 
 function formatResults(doc)

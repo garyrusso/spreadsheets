@@ -74,9 +74,64 @@ declare variable $c:REST-SEARCH-OPTIONS :=
     <term>
       <term-option>case-insensitive</term-option>
     </term>
+    <grammar>
+      <quotation>"</quotation>
+      <implicit>
+        <cts:and-query strength="20" xmlns:cts="http://marklogic.com/cts"/>
+      </implicit>
+      <starter strength="30" apply="grouping" delimiter=")">(</starter>
+      <starter strength="40" apply="prefix" element="cts:not-query">-</starter>
+      <joiner strength="10" apply="infix" element="cts:or-query" tokenize="word">OR</joiner>
+      <joiner strength="20" apply="infix" element="cts:and-query" tokenize="word">AND</joiner>
+      <joiner strength="30" apply="infix" element="cts:near-query" tokenize="word">NEAR</joiner>
+      <joiner strength="30" apply="near2" consume="2" element="cts:near-query">NEAR/</joiner>
+      <joiner strength="32" apply="boost" element="cts:boost-query" tokenize="word">BOOST</joiner>
+      <joiner strength="35" apply="not-in" element="cts:not-in-query" tokenize="word">NOT_IN</joiner>
+      <joiner strength="50" apply="constraint">:</joiner>
+      <joiner strength="50" apply="constraint" compare="LT" tokenize="word">LT</joiner>
+      <joiner strength="50" apply="constraint" compare="LE" tokenize="word">LE</joiner>
+      <joiner strength="50" apply="constraint" compare="GT" tokenize="word">GT</joiner>
+      <joiner strength="50" apply="constraint" compare="GE" tokenize="word">GE</joiner>
+      <joiner strength="50" apply="constraint" compare="NE" tokenize="word">NE</joiner>
+    </grammar>
     <constraint name="types">
       <range type="xs:string">
         <element ns="http://tax.thomsonreuters.com" name="type"/>
+        <facet-option>descending</facet-option>
+        <facet-option>limit=10</facet-option>
+      </range>
+    </constraint>
+    <constraint name="client">
+      <range type="xs:string">
+        <element ns="http://tax.thomsonreuters.com" name="client"/>
+        <facet-option>descending</facet-option>
+        <facet-option>limit=10</facet-option>
+      </range>
+    </constraint>
+    <constraint name="country">
+      <range type="xs:string">
+        <element ns="http://tax.thomsonreuters.com" name="country"/>
+        <facet-option>descending</facet-option>
+        <facet-option>limit=10</facet-option>
+      </range>
+    </constraint>
+    <constraint name="state">
+      <range type="xs:string">
+        <element ns="http://tax.thomsonreuters.com" name="state"/>
+        <facet-option>descending</facet-option>
+        <facet-option>limit=10</facet-option>
+      </range>
+    </constraint>
+    <constraint name="filingEntity">
+      <range type="xs:string">
+        <element ns="http://tax.thomsonreuters.com" name="filingEntity"/>
+        <facet-option>descending</facet-option>
+        <facet-option>limit=10</facet-option>
+      </range>
+    </constraint>
+    <constraint name="fiscalYear">
+      <range type="xs:string">
+        <element ns="http://tax.thomsonreuters.com" name="fiscalYear"/>
         <facet-option>descending</facet-option>
         <facet-option>limit=10</facet-option>
       </range>
@@ -88,16 +143,38 @@ declare variable $c:REST-SEARCH-OPTIONS :=
         <facet-option>limit=10</facet-option>
       </range>
     </constraint>
+    <constraint name="rowLabels">
+      <range type="xs:string">
+        <element ns="http://tax.thomsonreuters.com" name="rowLabel"/>
+        <facet-option>descending</facet-option>
+        <facet-option>limit=5</facet-option>
+      </range>
+    </constraint>
     <constraint name="rangeNames">
       <range type="xs:string">
         <element ns="http://tax.thomsonreuters.com" name="rangeName"/>
         <facet-option>descending</facet-option>
-        <facet-option>limit=10</facet-option>
+        <facet-option>limit=20</facet-option>
       </range>
+    </constraint>
+    <constraint name="returnBasisProvisionVariance">
+      <word>
+        <element ns="http://tax.thomsonreuters.com" name="returnBasisProvisionVariance"/>
+      </word>
     </constraint>
     <constraint name="id">
       <word>
         <element ns="http://tax.thomsonreuters.com" name="id"/>
+      </word>
+    </constraint>
+    <constraint name="templateId">
+      <word>
+        <element ns="http://tax.thomsonreuters.com" name="templateId"/>
+      </word>
+    </constraint>
+    <constraint name="workPaperId">
+      <word>
+        <element ns="http://tax.thomsonreuters.com" name="workPaperId"/>
       </word>
     </constraint>
     <constraint name="type">
@@ -120,18 +197,53 @@ declare variable $c:REST-SEARCH-OPTIONS :=
         <element ns="http://tax.thomsonreuters.com" name="rnValue"/>
       </word>
     </constraint>
-    <transform-results ns="http://marklogic.com/roxy/lib/origin-lib" apply="rest-origin-snippet" at="/app/lib/origin-lib.xqy">
+    <transform-results apply="metadata-snippet">
       <preferred-elements>
         <element ns="http://tax.thomsonreuters.com" name="type"/>
-        <element ns="http://tax.thomsonreuters.com" name="id"/>
         <element ns="http://tax.thomsonreuters.com" name="user"/>
-        <element ns="http://tax.thomsonreuters.com" name="client"/>
+        <element ns="http://tax.thomsonreuters.com" name="workPaperId"/>
+        <element ns="http://tax.thomsonreuters.com" name="rowLabel"/>
+        <element ns="http://tax.thomsonreuters.com" name="columnLabel"/>
+        <element ns="http://tax.thomsonreuters.com" name="rangeName"/>
       </preferred-elements>
     </transform-results>
+    <operator name="results">
+      <state name="compact">
+        <transform-results apply="metadata-snippet">
+          <preferred-elements>
+            <element ns="http://tax.thomsonreuters.com" name="type"/>
+            <element ns="http://tax.thomsonreuters.com" name="id"/>
+            <element ns="http://tax.thomsonreuters.com" name="workPaperId"/>
+            <element ns="http://tax.thomsonreuters.com" name="user"/>
+            <element ns="http://tax.thomsonreuters.com" name="rowLabel"/>
+            <element ns="http://tax.thomsonreuters.com" name="columnLabel"/>
+            <element ns="http://tax.thomsonreuters.com" name="rangeName"/>
+          </preferred-elements>
+          <per-match-tokens>30</per-match-tokens>
+          <max-matches>4</max-matches>
+          <max-snippet-chars>200</max-snippet-chars>
+        </transform-results>
+      </state>
+      <state name="detailed">
+        <transform-results apply="metadata-snippet">
+          <preferred-elements>
+            <element ns="http://tax.thomsonreuters.com" name="type"/>
+            <element ns="http://tax.thomsonreuters.com" name="id"/>
+            <element ns="http://tax.thomsonreuters.com" name="workPaperId"/>
+            <element ns="http://tax.thomsonreuters.com" name="user"/>
+            <element ns="http://tax.thomsonreuters.com" name="rowLabel"/>
+            <element ns="http://tax.thomsonreuters.com" name="columnLabel"/>
+            <element ns="http://tax.thomsonreuters.com" name="rangeName"/>
+          </preferred-elements>
+          <per-match-tokens>30</per-match-tokens>
+          <max-matches>4</max-matches>
+          <max-snippet-chars>200</max-snippet-chars>
+        </transform-results>
+      </state>
+    </operator>
     <return-results>true</return-results>
     <return-query>true</return-query>
   </options>;
-
 
 declare variable $c:SEARCH-OPTIONS :=
   <options xmlns="http://marklogic.com/appservices/search">
@@ -140,6 +252,26 @@ declare variable $c:SEARCH-OPTIONS :=
       <term-option>case-insensitive</term-option>
     </term>
     <additional-query>{cts:collection-query(("RESTful", "customer", "order", "origin", "spreadsheet", "userdata"))}</additional-query>
+    <grammar>
+      <quotation>"</quotation>
+      <implicit>
+        <cts:and-query strength="20" xmlns:cts="http://marklogic.com/cts"/>
+      </implicit>
+      <starter strength="30" apply="grouping" delimiter=")">(</starter>
+      <starter strength="40" apply="prefix" element="cts:not-query">-</starter>
+      <joiner strength="10" apply="infix" element="cts:or-query" tokenize="word">OR</joiner>
+      <joiner strength="20" apply="infix" element="cts:and-query" tokenize="word">AND</joiner>
+      <joiner strength="30" apply="infix" element="cts:near-query" tokenize="word">NEAR</joiner>
+      <joiner strength="30" apply="near2" consume="2" element="cts:near-query">NEAR/</joiner>
+      <joiner strength="32" apply="boost" element="cts:boost-query" tokenize="word">BOOST</joiner>
+      <joiner strength="35" apply="not-in" element="cts:not-in-query" tokenize="word">NOT_IN</joiner>
+      <joiner strength="50" apply="constraint">:</joiner>
+      <joiner strength="50" apply="constraint" compare="LT" tokenize="word">LT</joiner>
+      <joiner strength="50" apply="constraint" compare="LE" tokenize="word">LE</joiner>
+      <joiner strength="50" apply="constraint" compare="GT" tokenize="word">GT</joiner>
+      <joiner strength="50" apply="constraint" compare="GE" tokenize="word">GE</joiner>
+      <joiner strength="50" apply="constraint" compare="NE" tokenize="word">NE</joiner>
+    </grammar>
     <constraint name="types">
       <range type="xs:string">
         <element ns="http://tax.thomsonreuters.com" name="type"/>
@@ -157,6 +289,13 @@ declare variable $c:SEARCH-OPTIONS :=
     <constraint name="country">
       <range type="xs:string">
         <element ns="http://tax.thomsonreuters.com" name="country"/>
+        <facet-option>descending</facet-option>
+        <facet-option>limit=10</facet-option>
+      </range>
+    </constraint>
+    <constraint name="state">
+      <range type="xs:string">
+        <element ns="http://tax.thomsonreuters.com" name="state"/>
         <facet-option>descending</facet-option>
         <facet-option>limit=10</facet-option>
       </range>
@@ -206,6 +345,11 @@ declare variable $c:SEARCH-OPTIONS :=
         <element ns="http://tax.thomsonreuters.com" name="templateId"/>
       </word>
     </constraint>
+    <constraint name="workPaperId">
+      <word>
+        <element ns="http://tax.thomsonreuters.com" name="workPaperId"/>
+      </word>
+    </constraint>
     <constraint name="type">
       <word>
         <element ns="http://tax.thomsonreuters.com" name="type"/>
@@ -230,6 +374,7 @@ declare variable $c:SEARCH-OPTIONS :=
       <preferred-elements>
         <element ns="http://tax.thomsonreuters.com" name="type"/>
         <element ns="http://tax.thomsonreuters.com" name="user"/>
+        <element ns="http://tax.thomsonreuters.com" name="workPaperId"/>
         <element ns="http://tax.thomsonreuters.com" name="rowLabel"/>
         <element ns="http://tax.thomsonreuters.com" name="columnLabel"/>
         <element ns="http://tax.thomsonreuters.com" name="rangeName"/>
@@ -241,6 +386,7 @@ declare variable $c:SEARCH-OPTIONS :=
           <preferred-elements>
             <element ns="http://tax.thomsonreuters.com" name="type"/>
             <element ns="http://tax.thomsonreuters.com" name="id"/>
+            <element ns="http://tax.thomsonreuters.com" name="workPaperId"/>
             <element ns="http://tax.thomsonreuters.com" name="user"/>
             <element ns="http://tax.thomsonreuters.com" name="rowLabel"/>
             <element ns="http://tax.thomsonreuters.com" name="columnLabel"/>
@@ -256,6 +402,7 @@ declare variable $c:SEARCH-OPTIONS :=
           <preferred-elements>
             <element ns="http://tax.thomsonreuters.com" name="type"/>
             <element ns="http://tax.thomsonreuters.com" name="id"/>
+            <element ns="http://tax.thomsonreuters.com" name="workPaperId"/>
             <element ns="http://tax.thomsonreuters.com" name="user"/>
             <element ns="http://tax.thomsonreuters.com" name="rowLabel"/>
             <element ns="http://tax.thomsonreuters.com" name="columnLabel"/>
