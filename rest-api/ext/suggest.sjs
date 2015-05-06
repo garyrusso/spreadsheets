@@ -16,13 +16,6 @@ function get(context, params) {
   var results = [];
   context.outputTypes = [];
 
-  xdmp.log("1.............. GET Suggestion Request");
-
-  // Return a successful response status other than the default
-  // using an array of the form [statusCode, statusMessage].
-  // Do NOT use this to return an error response.
-  
-  xdmp.addResponseHeader("Content-Disposition", 'attachment; filename="workpaper.xlsx"');
   context.outputStatus = [200, 'OK'];
 
   var pqtxt;
@@ -44,12 +37,10 @@ function get(context, params) {
   if (fn.stringLength(pqtxt) > 0) {
   
     suggestions = getSuggestions(pqtxt);
-xdmp.log("2.............. GET Suggestion Request");
 
   } else {
   
     suggestions = [];
-xdmp.log("3.............. GET Suggestion Request");
   
   }
 
@@ -240,18 +231,6 @@ function getParameters(params)
 
 function getSuggestions(pqtxt)
 {
-/*
-  var suggestions = [
-      "state:",
-      "state:Alberta",
-      "state:California",
-      "state:Manitoba",
-      "state:\"New Brunswick\"",
-      "state:\"New York\"",
-      "state:Saskatchewan"
-  ];
- */
-
   var suggestions;
 
   suggestions = suggest.getSuggestions(pqtxt);

@@ -12,7 +12,6 @@ module namespace ingest = "http://marklogic.com/roxy/lib/ingest";
 
 import module namespace ssheet = "http://marklogic.com/roxy/lib/ssheet" at "/app/lib/spreadsheet.xqy";
 import module namespace json   = "http://marklogic.com/json" at "/roxy/lib/json.xqy";
-(: import module namespace json   = "http://marklogic.com/json" at "/app/roxy/lib/json.xqy"; :)
 
 declare namespace tax  = "http://tax.thomsonreuters.com";
 
