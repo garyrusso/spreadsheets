@@ -662,17 +662,19 @@ declare function ingest:getValue($row as xs:string, $col as xs:string, $sheetNam
 {
   let $wkBook        := map:get($table, "xl/workbook.xml")/ssml:workbook/ssml:sheets/ssml:sheet
   let $rels          := map:get($table, "xl/_rels/workbook.xml.rels")/rel:Relationships
-  let $sharedStrings := map:get($table, "xl/sharedStrings.xml")/ssml:sst/ssml:si/ssml:t/text()
+  
+  (: Be sure to index from the /ssml:si element (not from /ssml:t element) :)
+  let $sharedStrings := map:get($table, "xl/sharedStrings.xml")/ssml:sst/ssml:si
 
-  let $wkSheetKey := "xl/"||xs:string($rels/rel:Relationship[@Id=$wkBook[@name=$sheetName]/@wbrel:id]/@Target)
+  let $wkSheetKey    := "xl/"||xs:string($rels/rel:Relationship[@Id=$wkBook[@name=$sheetName]/@wbrel:id]/@Target)
 
-  let $wkSheet := map:get($table, $wkSheetKey)
+  let $wkSheet  := map:get($table, $wkSheetKey)
   let $item     := $wkSheet/ssml:worksheet/ssml:sheetData/ssml:row[@r=$row]/ssml:c[@r=$col||$row]
 
   let $ref     := $item/@t
   let $value   := xs:string($item/ssml:v)
 
-  let $retVal  := if ($ref eq "s") then $sharedStrings[xs:integer($value) + 1] else $value
+  let $retVal  := if ($ref eq "s") then $sharedStrings[xs:integer($value) + 1]/ssml:t/text() else $value
 
   return $retVal
 };
@@ -817,6 +819,37 @@ declare function ingest:generateFileUri($user as xs:string, $fileName as xs:stri
 };
 
 (:~
+ : Centralized fucntion to create NameRef node.
+ :
+ : @params
+ :)
+declare function ingest:createNameRefNode(
+  $sheetName as xs:string,
+  $rangeName as xs:string,
+  $pos as xs:string,
+  $value as xs:string,
+  $row as xs:string,
+  $col as xs:string,
+  $rowLabel as xs:string,
+  $columnLabel as xs:string)
+{
+  let $doc :=
+    element { fn:QName($NS, "nameRef") }
+    {
+      element { fn:QName($NS, "rangeName") }   { $rangeName },
+      element { fn:QName($NS, "rowLabel") }    { if (fn:empty($rowLabel)) then "" else $rowLabel },
+      (: element { fn:QName($NS, "columnLabel") } { if (fn:empty($columnLabel)) then "" else $columnLabel }, :)
+      element { fn:QName($NS, "sheet") }       { $sheetName },
+      element { fn:QName($NS, "col") }         { $col },
+      element { fn:QName($NS, "row") }         { $row },
+      element { fn:QName($NS, "pos") }         { $pos },
+      element { fn:QName($NS, "rnValue") }      { if (fn:empty($value)) then () else $value }
+    }
+    
+  return $doc
+};
+
+(:~
  : Expansion Element
  :
  : @param $dn, $row, $col
@@ -826,28 +859,15 @@ declare function ingest:expansionElement($dn as node(), $row as xs:string, $col 
   let $newPos      := $col||$row
   let $sheetName   := $dn/tax:sheet/text()
   let $rangeName   := $dn/tax:rangeName/text()
-(:
-  let $rowLabel    := ingest:findRowLabel($row, $col, $sheetName, $table)
-  let $columnLabel := ingest:findColumnLabel($row, $col, $sheetName, $table)
-  let $newValue    := ingest:getValue($row, $col, $sheetName, $table)
-:)
 
   let $rowLabel    := ingest:findRowLabel(xs:string($row), $col, $sheetName, $table)
-  let $columnLabel := ingest:findColumnLabel(xs:string($row), $col, $sheetName, $table)
+
+  (: let $columnLabel := ingest:findColumnLabel(xs:string($row), $col, $sheetName, $table) :)
+  let $columnLabel := ""
+
   let $newValue    := ingest:getValue(xs:string($row), $col, $sheetName, $table)
   
-  let $doc :=
-    element { fn:QName($NS, "nameRef") }
-    {
-      element { fn:QName($NS, "rangeName") }   { $rangeName },
-      element { fn:QName($NS, "rowLabel") }    { if (fn:empty($rowLabel)) then "" else $rowLabel },
-      element { fn:QName($NS, "columnLabel") } { if (fn:empty($columnLabel)) then "" else $columnLabel },
-      element { fn:QName($NS, "sheet") }       { $sheetName },
-      element { fn:QName($NS, "col") }         { $col },
-      element { fn:QName($NS, "row") }         { $row },
-      element { fn:QName($NS, "pos") }         { $newPos },
-      element { fn:QName($NS, "rnValue") }      { if (fn:empty($newValue)) then () else $newValue }
-    }
+  let $doc := ingest:createNameRefNode($sheetName, $rangeName, $newPos, $newValue, $row, $col, $rowLabel, $columnLabel)
 
   return $doc
 };
@@ -882,6 +902,7 @@ declare function ingest:rowExpandDoc($dn as node(), $table as map:map)
   let $doc :=
     for $row in ((xs:integer($dn/tax:row1/text())) to xs:integer($dn/tax:row2/text()))
       let $col := $dn/tax:col1/text()
+      let $log := xdmp:log("222...row expansion..... rangeName: "||$dn/tax:rangeName/text()||" --- row: '"||$row||"' --- col: '"||$col||"'")
         return
           ingest:expansionElement($dn, xs:string($row), $col, $table)
                   
@@ -904,6 +925,8 @@ declare function ingest:columnRowExpandDoc($dn as node(), $table as map:map)
       return
         for $col in ($col1 to $col2)
           let $newCol := fn:codepoints-to-string($col)
+          let $log := xdmp:log("111...Column and Row expansion..... rangeName: "||$dn/tax:rangeName/text()||" --- row: '"||$row||"' --- col: '"||$newCol||"'")
+
             return
               ingest:expansionElement($dn, xs:string($row), $newCol, $table)
 
@@ -922,33 +945,125 @@ declare function ingest:expandDoc($doc as node(), $table as map:map)
     {
       for $nameRef in $doc/tax:nameRef
         return
+        (
+          xdmp:log("1...expandDoc........... rangeName: "||$nameRef/tax:rangeName/text()||" --- row1: '"||$nameRef/tax:row1/text()||"' --- col1: '"||$nameRef/tax:col1/text()||"'"),
+          xdmp:log("2...expandDoc........... rangeName: "||$nameRef/tax:rangeName/text()||" --- row1: '"||$nameRef/tax:row2/text()||"' --- col1: '"||$nameRef/tax:col2/text()||"'"),
+          
           if (fn:empty($nameRef/tax:row2/text())) then
           (
             (: No Expansion :)
+            xdmp:log("3...No Expansion......... rangeName: "||$nameRef/tax:rangeName/text()||" --- row1: '"||$nameRef/tax:row1/text()||"' --- col1: '"||$nameRef/tax:col1/text()||"'"),
             ingest:expansionElement($nameRef, xs:string($nameRef/tax:row1/text()), $nameRef/tax:col1/text(), $table)
           )
           else
           if (($nameRef/tax:row1/text() ne $nameRef/tax:row2/text()) and ($nameRef/tax:col1/text() ne $nameRef/tax:col2/text())) then
           (
             (: Row and Column Expansion :)
+            xdmp:log("4...Row and Column Expansion......... rangeName: "||$nameRef/tax:rangeName/text()||" --- row1: '"||$nameRef/tax:row1/text()||"' --- col1: '"||$nameRef/tax:col1/text()||"'"),
             ingest:columnRowExpandDoc($nameRef, $table)
           )
           else
           if ($nameRef/tax:row1/text() eq $nameRef/tax:row2/text()) then
           (
             (: Column Expansion :)
+            xdmp:log("5...Column Expansion......... rangeName: "||$nameRef/tax:rangeName/text()||" --- row1: '"||$nameRef/tax:row1/text()||"' --- col1: '"||$nameRef/tax:col1/text()||"'"),
             ingest:columnExpandDoc($nameRef, $table)
           )
           else
           if ($nameRef/tax:col1/text() eq $nameRef/tax:col2/text()) then
           (
             (: Row Expansion :)
+            xdmp:log("6...Row Expansion......... rangeName: "||$nameRef/tax:rangeName/text()||" --- row1: '"||$nameRef/tax:row1/text()||"' --- col1: '"||$nameRef/tax:col1/text()||"'"),
             ingest:rowExpandDoc($nameRef, $table)
           )
           else ()
+        )
     }
 
+  
+  (:  :)
+
   return $newDoc
+};
+
+declare function ingest:createWorkSheetMetadoc($wkSheet, $rels, $table)
+{
+  let $wkSheetKey := ingest:getWkSheetKey($wkSheet/@wbrel:id/fn:string(), $rels, $table)
+  let $relWkSheet := map:get($table, $wkSheetKey)
+  let $dim        := $relWkSheet/ssml:worksheet/ssml:dimension/@ref/fn:string()
+  let $rowCount   := fn:count($relWkSheet/ssml:worksheet/ssml:sheetData/ssml:row)
+  let $sharedStrings := map:get($table, "xl/sharedStrings.xml")/ssml:sst/ssml:si
+
+  let $doc :=
+    element { fn:QName($NS, "worksheet") }
+    {
+      element { fn:QName($NS, "meta") }
+      {
+        element { fn:QName($NS, "name") }          { $wkSheet/@name/fn:string() },
+        element { fn:QName($NS, "key") }           { $wkSheetKey },
+        element { fn:QName($NS, "rowCount") }      { $rowCount },
+        element { fn:QName($NS, "relId") }         { $wkSheet/@wbrel:id/fn:string() },
+        element { fn:QName($NS, "dimension") }
+        {
+          element { fn:QName($NS, "topLeft") }     { fn:tokenize($dim, ":") [1] },
+          element { fn:QName($NS, "bottomRight") } { fn:tokenize($dim, ":") [2] }
+        }
+      },
+      element { fn:QName($NS, "sheetData") }
+      {
+        for $cell in $relWkSheet/ssml:worksheet/ssml:sheetData/ssml:row
+          let $row  := xs:string($cell/@r)
+          for $column in $cell/ssml:c
+            let $pos   := xs:string($column/@r)
+            let $col   := fn:tokenize($pos, "[\d]+")[1] (: Tokenize to support more than 1 char like ABC7, AAA8 :)
+            let $ref   := xs:string($column/@t)
+            let $value := xs:string($column/ssml:v)
+            let $val   := if ($ref eq "s") then $sharedStrings[xs:integer($value) + 1]/ssml:t/text() else $value
+            let $type  := if ($ref eq "s") then "string" else "integer"
+            let $saveCell :=
+              if ($val eq " ") then
+                fn:false()
+              else if (fn:string-length(xs:string($val)) gt 0) then
+                fn:true()
+              else
+                fn:false()
+              
+              where
+                $saveCell eq fn:true() and
+                fn:not($cell[@hidden=1])
+                return
+                  element { fn:QName($NS, "cell") }
+                  {
+                    element { fn:QName($NS, "col") }      { $col },
+                    element { fn:QName($NS, "row") }      { $row },
+                    element { fn:QName($NS, "pos") }      { $pos },
+                    element { fn:QName($NS, "cellType") } { $type },
+                    element { fn:QName($NS, "val") }      { $val }
+                  }
+      }
+    }
+
+  return $doc
+};
+
+(:~
+ : Extract Spreadsheet Data By WorkSheet - this is needed to process very large spreadsheets
+ :
+ : @param $zipfile
+ :)
+declare function ingest:extractSpreadsheetDataByWorkSheet(
+  $sheetName as xs:string,
+  $spreadSheetType as xs:string,
+  $client as xs:string,
+  $userFullName as xs:string,
+  $user as xs:string,
+  $version as xs:string,
+  $workPaperId as xs:string,
+  $fileUri as xs:string,
+  $origTemplateId as xs:string,
+  $binFile as node()*)
+{
+  ()
 };
 
 (:~
@@ -957,6 +1072,118 @@ declare function ingest:expandDoc($doc as node(), $table as map:map)
  : @param $zipfile
  :)
 declare function ingest:extractSpreadsheetData(
+  $spreadSheetType as xs:string,
+  $client as xs:string,
+  $userFullName as xs:string,
+  $user as xs:string,
+  $version as xs:string,
+  $workPaperId as xs:string,
+  $fileUri as xs:string,
+  $origTemplateId as xs:string,
+  $binFile as node()*)
+{
+  (: 2 types: wpaper or template :)
+
+  let $exclude :=
+  (
+    "[Content_Types].xml", "docProps/app.xml", "xl/theme/theme1.xml", "xl/styles.xml", "_rels/.rels",
+    "xl/vbaProject.bin", "xl/media/image1.png"
+  )
+
+  let $fileName := fn:tokenize($fileUri, "/")[fn:last()-1]
+
+  let $table := map:map()
+  
+  let $docs :=
+    for $x in xdmp:zip-manifest($binFile)//zip:part/text()
+      where (($x = $exclude) eq fn:false()) and fn:not(fn:starts-with($x, "xl/printerSettings/printerSettings"))
+        return
+          map:put($table, $x, xdmp:zip-get($binFile, $x, $OPTIONS))
+
+  let $wkBook        := map:get($table, "xl/workbook.xml")/ssml:workbook
+
+  let $nameRefs      :=
+    for $item in $wkBook/ssml:definedNames/node()
+      where fn:not(fn:starts-with($item/text(), "#REF!"))
+        return $item
+
+  let $wkSheetList   := $wkBook/ssml:sheets/ssml:sheet
+  let $rels          := map:get($table, "xl/_rels/workbook.xml.rels")/rel:Relationships
+  let $sharedStrings := map:get($table, "xl/sharedStrings.xml")/ssml:sst/ssml:si/ssml:t/text()
+
+  let $workSheets :=
+    element { fn:QName($NS, "worksheets") }
+    {
+      for $ws in $wkSheetList
+        let $wkSheetKey := "xl/"||xs:string($rels/rel:Relationship[@Id=$ws/@wbrel:id/fn:string()]/@Target)
+        let $relWkSheet := map:get($table, $wkSheetKey)
+        let $dim := $relWkSheet/ssml:worksheet/ssml:dimension/@ref/fn:string()
+        where fn:empty($ws/@state)
+          return
+            ingest:createWorkSheetMetadoc($ws, $rels, $table)
+    }
+
+  let $newNameRefDoc := ingest:getNameRangeDoc($nameRefs, $table)
+  
+  let $templateId :=
+    if (fn:string-length($origTemplateId) gt 0) then
+      $origTemplateId
+    else
+      xdmp:hash64($workSheets)
+
+  (: GR001: fix to do this by worksheet :)
+  let $state                        := ingest:getNameRefInfo($nameRefs[@name="State"][1], $table)/tax:rnValue/text()
+  let $country                      := ingest:getNameRefInfo($nameRefs[@name="Country"][1], $table)/tax:rnValue/text()
+  let $filingEntity                 := ingest:getNameRefInfo($nameRefs[@name="FilingEntity"][1], $table)/tax:rnValue/text()
+  let $fiscalYear                   := ingest:getNameRefInfo($nameRefs[@name="FiscalYear"][1], $table)/tax:rnValue/text()
+  
+  let $averageVariance              := fn:abs(fn:round(ingest:getNameRefInfo($nameRefs[@name="AverageProvisionVariance"][1], $table)/tax:rnValue/text() * 100))
+  let $preTaxBookIncomeVariance     := fn:abs(fn:round(ingest:getNameRefInfo($nameRefs[@name="PreTaxBookIncomeVariance"][1], $table)/tax:rnValue/text() * 100))
+  let $returnBasisProvisionVariance := fn:abs(fn:round(ingest:getNameRefInfo($nameRefs[@name="ReturnBasisProvisionVariance"][1], $table)/tax:rnValue/text() * 100))
+  let $taxableIncomeVariance        := fn:abs(fn:round(ingest:getNameRefInfo($nameRefs[@name="TaxableIncomeVariance"][1], $table)/tax:rnValue/text() * 100))
+
+  let $doc :=
+    element { fn:QName($NS, "workbook") }
+    {
+      element { fn:QName($NS, "meta") }
+      {
+        element { fn:QName($NS, "type") }                         { $spreadSheetType },
+        element { fn:QName($NS, "client") }                       { $client },
+        element { fn:QName($NS, "state") }                        { $state },
+        element { fn:QName($NS, "country") }                      { $country },
+        element { fn:QName($NS, "filingEntity") }                 { $filingEntity },
+        element { fn:QName($NS, "fiscalYear") }                   { $fiscalYear },
+        element { fn:QName($NS, "averageVariance") }              { $averageVariance },
+        element { fn:QName($NS, "preTaxBookIncomeVariance") }     { $preTaxBookIncomeVariance },
+        element { fn:QName($NS, "returnBasisProvisionVariance") } { $returnBasisProvisionVariance },
+        element { fn:QName($NS, "taxableIncomeVariance") }        { $taxableIncomeVariance },
+        element { fn:QName($NS, "templateId") }                   { $templateId },
+        element { fn:QName($NS, "workPaperId") }                  { $workPaperId },
+        element { fn:QName($NS, "user") }                         { $userFullName },
+        element { fn:QName($NS, "version") }                      { $version },
+        element { fn:QName($NS, "fileName") }                     { $fileName },
+        element { fn:QName($NS, "creator") }        { map:get($table, "docProps/core.xml")/core:coreProperties/dc:creator/text() },
+        element { fn:QName($NS, "file") }           { $fileUri },
+        element { fn:QName($NS, "lastModifiedBy") } { map:get($table, "docProps/core.xml")/core:coreProperties/core:lastModifiedBy/text() },
+        element { fn:QName($NS, "created") }        { map:get($table, "docProps/core.xml")/core:coreProperties/dcterms:created/text() },
+        element { fn:QName($NS, "modified") }       { map:get($table, "docProps/core.xml")/core:coreProperties/dcterms:modified/text() }
+      },
+      element { fn:QName($NS, "feed") }
+      {
+        $newNameRefDoc,
+        $workSheets
+      }
+    }
+
+  return $doc
+};
+
+(:~
+ : Extract Spreadsheet Data
+ :
+ : @param $zipfile
+ :)
+declare function ingest:extractSpreadsheetDataOrig(
   $client as xs:string,
   $userFullName as xs:string,
   $user as xs:string,
@@ -1025,84 +1252,38 @@ declare function ingest:extractSpreadsheetData(
                     let $value := xs:string($column/ssml:v)
                     let $val   := if ($ref eq "s") then $sharedStrings[xs:integer($value) + 1] else $value
                     let $type  := if ($ref eq "s") then "string" else "integer"
-                    return
-                      element { fn:QName($NS, "cell") }
-                      {
-                        element { fn:QName($NS, "col") }   { $col },
-                        element { fn:QName($NS, "row") }   { $row },
-                        element { fn:QName($NS, "pos") }   { $pos },
-                        element { fn:QName($NS, "dtype") } { $type },
-                        element { fn:QName($NS, "val") }   { $val }
-                      }
+                    where fn:not($cell[@hidden=1])
+                      return
+                        element { fn:QName($NS, "cell") }
+                        {
+                          element { fn:QName($NS, "col") }     { $col },
+                          element { fn:QName($NS, "row") }     { $row },
+                          element { fn:QName($NS, "pos") }     { $pos },
+                          element { fn:QName($NS, "valType") } { $type },
+                          element { fn:QName($NS, "val") }     { $val }
+                        }
               }
             }
     }
 
-  (:
-     1st Pass - create temp doc that has an special expand node.
-     Expand node is used in the 2nd pass to expand the number of cells.
-  :)
-  let $nameRefPass1Doc :=
-        element { fn:QName($NS, "nameRefs") }
-        {
-          for $nameRef in $nameRefs
-            where fn:not(fn:starts-with(xs:string($nameRef/@name), "_")) and fn:empty($nameRef/@hidden)
-              return
-                ingest:getNameRefInfo($nameRef, $table)
-        }
-
-  let $rnExpansionDoc := ingest:expandDoc($nameRefPass1Doc, $table)
-
-  let $unSortedDoc :=
-      element { fn:QName($NS, "nameRefs") }
-      {
-        $rnExpansionDoc/node(),
-        for $nr in $nameRefPass1Doc/tax:nameRef
-          where fn:not(fn:empty($nr/tax:pos/text()))
-            return
-              element { fn:QName($NS, "nameRef") }
-              {
-                  element { fn:QName($NS, "rangeName") }   { $nr/tax:rangeName/text() },
-                  element { fn:QName($NS, "rowLabel") }    { $nr/tax:rowLabel/text() },
-                  element { fn:QName($NS, "columnLabel") } { $nr/tax:columnLabel/text() },
-                  element { fn:QName($NS, "sheet") }       { $nr/tax:sheet/text() },
-                  element { fn:QName($NS, "col") }         { $nr/tax:col/text() },
-                  element { fn:QName($NS, "row") }         { $nr/tax:row/text() },
-                  element { fn:QName($NS, "pos") }         { $nr/tax:pos/text() },
-                  element { fn:QName($NS, "rnValue") }     { $nr/tax:rnValue/text() }
-              }
-      }
-
-  let $newNameRefDoc :=
-      element { fn:QName($NS, "nameRefs") }
-      {
-        for $i in $unSortedDoc/tax:nameRef
-          let $row   := xs:integer($i/tax:row/text())
-          let $seq   :=
-            if ($row lt 10) then
-              $i/tax:col/text()||"0"||$i/tax:row/text()
-            else
-              $i/tax:pos/text()
-          let $rangeName := $i/tax:rangeName/text()
-          order by $seq, $rangeName
-            return $i
-      }
-
+  let $newNameRefDoc := ingest:getNameRangeDoc($nameRefs, $table)
+  
   let $templateId :=
     if (fn:string-length($origTemplateId) gt 0) then
       $origTemplateId
     else
       xdmp:hash64($workSheets)
 
-  let $state                        := ingest:getNameRefInfo($nameRefs[@name="State"], $table)/tax:rnValue/text()
-  let $country                      := ingest:getNameRefInfo($nameRefs[@name="Country"], $table)/tax:rnValue/text()
-  let $filingEntity                 := ingest:getNameRefInfo($nameRefs[@name="FilingEntity"], $table)/tax:rnValue/text()
-  let $fiscalYear                   := ingest:getNameRefInfo($nameRefs[@name="FiscalYear"], $table)/tax:rnValue/text()
+  (: GR001: fix to do this by worksheet :)
+  let $state                        := ingest:getNameRefInfo($nameRefs[@name="State"][1], $table)/tax:rnValue/text()
+  let $country                      := ingest:getNameRefInfo($nameRefs[@name="Country"][1], $table)/tax:rnValue/text()
+  let $filingEntity                 := ingest:getNameRefInfo($nameRefs[@name="FilingEntity"][1], $table)/tax:rnValue/text()
+  let $fiscalYear                   := ingest:getNameRefInfo($nameRefs[@name="FiscalYear"][1], $table)/tax:rnValue/text()
   
-  let $averageVariance              := fn:abs(fn:round(ingest:getNameRefInfo($nameRefs[@name="AverageProvisionVariance"], $table)/tax:rnValue/text() * 100))
-  let $preTaxBookIncomeVariance     := fn:abs(fn:round(ingest:getNameRefInfo($nameRefs[@name="PreTaxBookIncomeVariance"], $table)/tax:rnValue/text() * 100))
-  let $returnBasisProvisionVariance := fn:abs(fn:round(ingest:getNameRefInfo($nameRefs[@name="ReturnBasisProvisionVariance"], $table)/tax:rnValue/text() * 100))
-  let $taxableIncomeVariance        := fn:abs(fn:round(ingest:getNameRefInfo($nameRefs[@name="TaxableIncomeVariance"], $table)/tax:rnValue/text() * 100))
+  let $averageVariance              := fn:abs(fn:round(ingest:getNameRefInfo($nameRefs[@name="AverageProvisionVariance"][1], $table)/tax:rnValue/text() * 100))
+  let $preTaxBookIncomeVariance     := fn:abs(fn:round(ingest:getNameRefInfo($nameRefs[@name="PreTaxBookIncomeVariance"][1], $table)/tax:rnValue/text() * 100))
+  let $returnBasisProvisionVariance := fn:abs(fn:round(ingest:getNameRefInfo($nameRefs[@name="ReturnBasisProvisionVariance"][1], $table)/tax:rnValue/text() * 100))
+  let $taxableIncomeVariance        := fn:abs(fn:round(ingest:getNameRefInfo($nameRefs[@name="TaxableIncomeVariance"][1], $table)/tax:rnValue/text() * 100))
 
   let $doc :=
     element { fn:QName($NS, "workbook") }
@@ -1142,7 +1323,224 @@ declare function ingest:extractSpreadsheetData(
 
 (:
 :)
+declare function ingest:getWkSheetKey($sheet, $rels, $table)
+{
+  let $wkBook        := map:get($table, "xl/workbook.xml")/ssml:workbook/ssml:sheets/ssml:sheet
+  let $rels          := map:get($table, "xl/_rels/workbook.xml.rels")/rel:Relationships
+
+  let $wkSheetKey    := "xl/"||xs:string($rels/rel:Relationship[@Id=$wkBook[@name=$sheet]/@wbrel:id]/@Target)
+  
+  return $wkSheetKey
+};
+
+(:
+:)
+declare function ingest:getNameRangeDocByWorkSheet($sheetName, $nameRefs, $table)
+{
+  (:
+     1st Pass - create temp doc that has an special expand node.
+     Expand node is used in the 2nd pass to expand the number of cells.
+  :)
+  let $nameRefPass1Doc :=
+        element { fn:QName($NS, "nameRefs") }
+        {
+          for $nameRef in $nameRefs
+            let $item1  := fn:tokenize($nameRef, ",") [1]
+            let $sheet  := fn:replace(fn:tokenize($item1, "!") [1], "'", "")
+              where
+                fn:not(fn:starts-with(xs:string($nameRef/@name), "_")) and
+                fn:empty($nameRef/@hidden) and
+                $sheet eq $sheetName
+              return
+                ingest:getNameRefInfo($nameRef, $table)
+        }
+
+  let $rnExpansionDoc := ingest:expandDoc($nameRefPass1Doc, $table)
+
+  let $unSortedDoc :=
+      element { fn:QName($NS, "nameRefs") }
+      {
+        $rnExpansionDoc/node(),
+        for $nr in $nameRefPass1Doc/tax:nameRef
+          where fn:not(fn:empty($nr/tax:pos/text()))
+            return
+              ingest:createNameRefNode(
+                $nr/tax:sheet/text(),
+                $nr/tax:rangeName/text(),
+                $nr/tax:pos/text(),
+                $nr/tax:rnValue/text(),
+                $nr/tax:row/text(),
+                $nr/tax:col/text(),
+                $nr/tax:rowLabel/text(),
+                $nr/tax:columnLabel/text()
+              )
+      }
+
+  let $newNameRefDoc :=
+      element { fn:QName($NS, "nameRefs") }
+      {
+        for $i in $unSortedDoc/tax:nameRef
+          let $row   := xs:integer($i/tax:row/text())
+          let $seq   :=
+            if ($row lt 10) then
+              $i/tax:col/text()||"0"||$i/tax:row/text()
+            else
+              $i/tax:pos/text()
+          let $rangeName := $i/tax:rangeName/text()
+          order by $seq, $rangeName
+            return $i
+      }
+
+  return $newNameRefDoc
+};
+
+(:
+:)
+declare function ingest:getNameRangeDoc($nameRefs, $table)
+{
+  (:
+     1st Pass - create temp doc that has an special expand node.
+     Expand node is used in the 2nd pass to expand the number of cells.
+  :)
+  let $nameRefPass1Doc :=
+        element { fn:QName($NS, "nameRefs") }
+        {
+          for $nameRef in $nameRefs
+            where fn:not(fn:starts-with(xs:string($nameRef/@name), "_")) and fn:empty($nameRef/@hidden)
+              return
+                ingest:getNameRefInfo($nameRef, $table)
+        }
+
+  let $rnExpansionDoc := ingest:expandDoc($nameRefPass1Doc, $table)
+
+  let $unSortedDoc :=
+      element { fn:QName($NS, "nameRefs") }
+      {
+        $rnExpansionDoc/node(),
+        for $nr in $nameRefPass1Doc/tax:nameRef
+          where fn:not(fn:empty($nr/tax:pos/text()))
+            return
+              ingest:createNameRefNode(
+                $nr/tax:sheet/text(),
+                $nr/tax:rangeName/text(),
+                $nr/tax:pos/text(),
+                $nr/tax:rnValue/text(),
+                $nr/tax:row/text(),
+                $nr/tax:col/text(),
+                $nr/tax:rowLabel/text(),
+                $nr/tax:columnLabel/text()
+              )
+      }
+
+  let $newNameRefDoc :=
+      element { fn:QName($NS, "nameRefs") }
+      {
+        for $i in $unSortedDoc/tax:nameRef
+          let $row   := xs:integer($i/tax:row/text())
+          let $seq   :=
+            if ($row lt 10) then
+              $i/tax:col/text()||"0"||$i/tax:row/text()
+            else
+              $i/tax:pos/text()
+          let $rangeName := $i/tax:rangeName/text()
+          order by $seq, $rangeName
+            return $i
+      }
+
+  return $newNameRefDoc
+};
+
+(:
+:)
 declare function ingest:getNameRefInfo($nameRef, $table)
+{
+  let $rangeName := xs:string($nameRef/@name)
+
+  (: There can be multiple rangeName items: 'T010'!$A$1:$O$56,'T010'!$A$57:$K$77 :)
+  let $nameRefVal := $nameRef/text()
+  let $item1  := fn:tokenize($nameRefVal, ",") [1]
+  
+  (: Use item1 for now. Add support for multiple items later :) 
+  let $sheet := fn:replace(fn:tokenize($item1, "!") [1], "'", "")
+  
+  let $cell   := fn:tokenize($item1, "!") [2]
+  let $pos    := fn:replace($cell, "\$", "")
+  
+  let $pos1   := fn:tokenize($pos, ":") [1]
+  let $pos2   := fn:tokenize($pos, ":") [2]
+  
+  let $col    := fn:tokenize($pos1, "[0-9]") [1]
+  
+  let $col1 := fn:tokenize($pos1, "[\d]+")[1]
+  let $col2 := fn:tokenize($pos2, "[\d]+")[1]
+  
+  let $row1   := fn:tokenize($pos1, "[A-Za-z]+") [2]
+  let $row2   := fn:tokenize($pos2, "[A-Za-z]+") [2]
+
+  (: GR001 - Added new code to check if row or cell is hidden :)
+  let $wkBook        := map:get($table, "xl/workbook.xml")/ssml:workbook/ssml:sheets/ssml:sheet
+  let $rels          := map:get($table, "xl/_rels/workbook.xml.rels")/rel:Relationships
+
+  let $wkSheetKey    := "xl/"||xs:string($rels/rel:Relationship[@Id=$wkBook[@name=$sheet]/@wbrel:id]/@Target)
+  let $wkSheet       := map:get($table, $wkSheetKey)
+
+  let $hiddenAttrib1 :=
+    if (fn:string-length($row1) gt 0) then
+    (
+      if (fn:empty($wkSheet/ssml:worksheet/ssml:sheetData/ssml:row[@r=$row1]/@hidden)) then
+        fn:false()
+      else
+        fn:true()
+     )
+     else
+      fn:false()
+
+  let $hiddenAttrib2 :=
+    if (fn:string-length($row2) gt 0) then
+    (
+      if (fn:empty($wkSheet/ssml:worksheet/ssml:sheetData/ssml:row[@r=$row2]/@hidden)) then
+        fn:false()
+      else
+        fn:true()
+     )
+     else
+      fn:false()
+
+  let $hiddenCell  := if ($hiddenAttrib1 or $hiddenAttrib2) then fn:true() else fn:false()
+  
+  let $val         := if ($hiddenCell) then "hidden" else ingest:getValue($row1, $col1, $sheet, $table)
+  let $rowLabel    := if ($hiddenCell) then "hidden" else ingest:findRowLabel($row1, $col1, $sheet, $table)
+  let $columnLabel := ""
+
+  (:
+  let $columnLabel := if ($hiddenCell) then "hidden" else ingest:findColumnLabel($row1, $col1, $sheet, $table)
+  let $log := xdmp:log("2....... $hidden: '"||$wkSheet/ssml:worksheet/ssml:sheetData/ssml:row[@r=$row1]/@hidden||"'")
+  :)
+
+  let $log := xdmp:log("1...... $sheet: '"||$sheet||"' --- $rowNum: '"||$wkSheet/ssml:worksheet/ssml:sheetData/ssml:row[@r=$row1]/@r||"' --- $rowLabel: '"||$rowLabel||"' --- $columnLabel: '"||$columnLabel||"'")
+
+  let $doc :=
+    element { fn:QName($NS, "nameRef") }
+    {
+      element { fn:QName($NS, "rangeName") }   { $rangeName },
+      element { fn:QName($NS, "rowLabel") }    { $rowLabel },
+      element { fn:QName($NS, "columnLabel") } { $columnLabel },
+      element { fn:QName($NS, "sheet") }       { $sheet },
+      element { fn:QName($NS, "col1") }        { $col1 },
+      element { fn:QName($NS, "row1") }        { $row1 },
+      element { fn:QName($NS, "pos1") }        { $pos1 },
+      element { fn:QName($NS, "col2") }        { $col2 },
+      element { fn:QName($NS, "row2") }        { $row2 },
+      element { fn:QName($NS, "pos2") }        { $pos2 },
+      element { fn:QName($NS, "rnValue") }     { $val }
+    }
+
+  return $doc
+};
+
+(:
+:)
+declare function ingest:getNameRefInfoOrig($nameRef, $table)
 {
   let $rangeName := xs:string($nameRef/@name)
   
@@ -1165,10 +1563,12 @@ declare function ingest:getNameRefInfo($nameRef, $table)
   
   let $row1   := fn:tokenize($pos1, "[A-Za-z]+") [2]
   let $row2   := fn:tokenize($pos2, "[A-Za-z]+") [2]
-  
-  let $val         := ingest:getValue($row1, $col1, $sheet, $table)
-  let $rowLabel    := ingest:findRowLabel($row1, $col1, $sheet, $table)
-  let $columnLabel := ingest:findColumnLabel($row1, $col1, $sheet, $table)
+
+  let $hiddenCell := fn:true()
+
+  let $val         := if ($hiddenCell) then "hidden" else ingest:getValue($row1, $col1, $sheet, $table)
+  let $rowLabel    := if ($hiddenCell) then "hidden" else ingest:findRowLabel($row1, $col1, $sheet, $table)
+  let $columnLabel := if ($hiddenCell) then "hidden" else ingest:findColumnLabel($row1, $col1, $sheet, $table)
 
   let $doc :=
     element { fn:QName($NS, "nameRef") }
@@ -1259,68 +1659,21 @@ declare function ingest:extractGeneratedSpreadsheetData(
                     let $value := xs:string($column/ssml:v)
                     let $val   := if ($ref eq "s") then $sharedStrings[xs:integer($value) + 1] else $value
                     let $type  := if ($ref eq "s") then "string" else "integer"
-                    return
-                      element { fn:QName($NS, "cell") }
-                      {
-                        element { fn:QName($NS, "col") }   { $col },
-                        element { fn:QName($NS, "row") }   { $row },
-                        element { fn:QName($NS, "pos") }   { $pos },
-                        element { fn:QName($NS, "dtype") } { $type },
-                        element { fn:QName($NS, "val") }   { $val }
-                      }
+                    where fn:not($cell[@hidden=1])
+                      return
+                        element { fn:QName($NS, "cell") }
+                        {
+                          element { fn:QName($NS, "col") }     { $col },
+                          element { fn:QName($NS, "row") }     { $row },
+                          element { fn:QName($NS, "pos") }     { $pos },
+                          element { fn:QName($NS, "valType") } { $type },
+                          element { fn:QName($NS, "val") }     { $val }
+                        }
               }
             }
     }
 
-  (:
-     1st Pass - create temp doc that has an special expand node.
-     Expand node is used in the 2nd pass to expand the number of cells.
-  :)
-  let $nameRefPass1Doc :=
-        element { fn:QName($NS, "nameRefs") }
-        {
-          for $nameRef in $nameRefs
-            where fn:not(fn:starts-with(xs:string($nameRef/@name), "_")) and fn:empty($nameRef/@hidden)
-              return
-                ingest:getNameRefInfo($nameRef, $table)
-        }
-
-  let $nameRefExpansionDoc := ingest:expandDoc($nameRefPass1Doc, $table)
-
-  let $unSortedDoc :=
-      element { fn:QName($NS, "nameRefs") }
-      {
-        $nameRefExpansionDoc/node(),
-        for $nr in $nameRefPass1Doc/tax:nameRef
-          where fn:not(fn:empty($nr/tax:pos/text()))
-            return
-              element { fn:QName($NS, "nameRef") }
-              {
-                  element { fn:QName($NS, "rangeName") }   { $nr/tax:rangeName/text() },
-                  element { fn:QName($NS, "rowLabel") }    { $nr/tax:rowLabel/text() },
-                  element { fn:QName($NS, "columnLabel") } { $nr/tax:columnLabel/text() },
-                  element { fn:QName($NS, "sheet") }       { $nr/tax:sheet/text() },
-                  element { fn:QName($NS, "col") }         { $nr/tax:col/text() },
-                  element { fn:QName($NS, "row") }         { $nr/tax:row/text() },
-                  element { fn:QName($NS, "pos") }         { $nr/tax:pos/text() },
-                  element { fn:QName($NS, "rnValue") }     { $nr/tax:rnValue/text() }
-              }
-      }
-  
-  let $newNameRefDoc :=
-      element { fn:QName($NS, "nameRefs") }
-      {
-        for $i in $unSortedDoc/tax:nameRef
-          let $row   := xs:integer($i/tax:row/text())
-          let $seq   :=
-            if ($row lt 10) then
-              $i/tax:col/text()||"0"||$i/tax:row/text()
-            else
-              $i/tax:pos/text()
-          let $rangeName := $i/tax:rangeName/text()
-          order by $seq, $rangeName
-            return $i
-      }
+  let $newNameRefDoc := ingest:getNameRangeDoc($nameRefs, $table)
 
   let $doc :=
     element { fn:QName($NS, "workbook") }

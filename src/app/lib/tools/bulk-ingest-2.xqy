@@ -28,14 +28,14 @@ let $docs :=
     
     let $fileUri := ingest:generateFileUri($user, $zipFile, $nDoc)
     let $filingDate := ingest:getFilingDate()
+
     let $binDoc  := ssheet:createSpreadsheetFile($userFullName, $filingDate/days/text(), $fileUri)
     let $newDoc  := ingest:extractSpreadsheetData($user, $binDoc, $fileUri)
-
 (:
     let $binDoc  := ssheet:createSpreadsheetFile($userFullName, $filingDate/days/text(), $fileUri, $taxPlanDoc)
-    let $newDoc  := ingest:extractSpreadsheetData($userFullName, $user, $binDoc, $taxRate, $deductionPct, $totalGrossInc, $taxableInc, $filingDate/isoDate/text(), $fileUri)
+    let $newDoc  := ingest:extractSpreadsheetData("wpaper", $userFullName, $user, $binDoc, $taxRate, $deductionPct, $totalGrossInc, $taxableInc, $filingDate/isoDate/text(), $fileUri)
 :)
-
+    
     let $uri     := $dir||xdmp:hash64($newDoc)||".xml"
     let $log     := xdmp:log("111 ------ $fileUri: "||$fileUri)
     
