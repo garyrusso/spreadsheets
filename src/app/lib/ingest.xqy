@@ -1185,7 +1185,7 @@ declare function ingest:extractSpreadsheetData(
   $workPaperId as xs:string,
   $fileUri as xs:string,
   $origTemplateId as xs:string,
-  $binFileName as node()*)
+  $binFileName as xs:string)
 {
   let $metaDoc      := ingest:getLocalMetaInfo($binFileName)
   let $binFile      := xdmp:document-get($binFileName, $BIN-OPTIONS)
@@ -1220,17 +1220,23 @@ declare function ingest:extractSpreadsheetData(
   let $binDocStatus := xdmp:document-insert($metaDoc/tax:binFileUri/text(), $binFile, xdmp:default-permissions(), ("binary"))
   
   let $spreadSheetType := "wpaper"
-  
+
+  let $templateId :=
+    if (fn:string-length($origTemplateId) gt 0) then
+      $origTemplateId
+    else
+      xdmp:hash64($binFile)
+
   let $wkBookMapDoc := 
       element { fn:QName($NS, "workBookMap") }
       {
         element { fn:QName($NS, "meta") }
         {
           element { fn:QName($NS, "type") }           { $spreadSheetType },
-          element { fn:QName($NS, "templateId") }     { $metaDoc/tax:templateId/text() },
-          element { fn:QName($NS, "workPaperId") }    { $metaDoc/tax:workPaperId/text() },
-          element { fn:QName($NS, "user") }           { $metaDoc/tax:userFullName/text() },
-          element { fn:QName($NS, "version") }        { $metaDoc/tax:version/text() },
+          element { fn:QName($NS, "templateId") }     { $templateId },
+          element { fn:QName($NS, "workPaperId") }    { $workPaperId },
+          element { fn:QName($NS, "user") }           { $userFullName },
+          element { fn:QName($NS, "version") }        { $version },
           element { fn:QName($NS, "fileName") }       { $metaDoc/tax:fileName/text() },
           element { fn:QName($NS, "creator") }        { map:get($table, "docProps/core.xml")/core:coreProperties/dc:creator/text() },
           element { fn:QName($NS, "file") }           { $metaDoc/tax:binFileUri/text() },
