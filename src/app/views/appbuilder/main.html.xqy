@@ -81,8 +81,9 @@ declare function local:transform-snippet($nodes as node()*)
       case element() return
         let $docUri := $n/../@uri
         let $doc3   := fn:doc($docUri)
-        let $fileUri := $doc3/tax:workbook/tax:meta/tax:file/text()
+        let $fileUri := $doc3//tax:meta/tax:file/text()
         let $docType :=
+          (: if (fn:starts-with($doc3//tax:meta/tax:type/text(), "wsheet")) then :)
           if (fn:string-length($doc3//tax:meta/tax:type/text()) eq 0) then
             "Data Request"
           else
@@ -104,7 +105,9 @@ declare function local:transform-snippet($nodes as node()*)
                     </tr>,
                     <tr><td width="145" valign="top">Type</td><td colspan="2" valign="top">{$docType}</td></tr>,
                     <tr><td width="145" valign="top">User</td><td colspan="2" valign="top">{$doc3//tax:meta/tax:user/text()}</td></tr>,
-                    if (fn:starts-with($doc3//tax:meta/tax:type/text(), "template") or fn:starts-with($doc3//tax:meta/tax:type/text(), "wpaper")) then
+                    if (fn:starts-with($doc3//tax:meta/tax:type/text(), "template") or
+                        fn:starts-with($doc3//tax:meta/tax:type/text(), "wpaper") or
+                        fn:starts-with($doc3//tax:meta/tax:type/text(), "wsheet")) then
                       <tr><td width="145" valign="top">File URI</td><td colspan="2" valign="top"><a target="_blank" href="view.xlsx?uri={$fileUri}">{$fileUri}</a></td></tr>
                     else
                     if (fn:ends-with($docUri, "json")) then 
