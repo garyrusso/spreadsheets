@@ -1183,8 +1183,8 @@ declare function ingest:extractSpreadsheetData(
   $user as xs:string,
   $version as xs:string,
   $workPaperId as xs:string,
-  $fileUri as xs:string,
   $origTemplateId as xs:string,
+  $fileUri as xs:string,
   $binFileName as xs:string)
 {
   let $metaDoc      := ingest:getLocalMetaInfo($binFileName)
@@ -1225,17 +1225,19 @@ declare function ingest:extractSpreadsheetData(
     if (fn:string-length($origTemplateId) gt 0) then
       $origTemplateId
     else
-      xdmp:hash64($binFile)
+      xdmp:hash64(xs:string($binFile))
 
   let $wkBookMapDoc := 
-      element { fn:QName($NS, "workBookMap") }
+      element { fn:QName($NS, "workbook") }
       {
         element { fn:QName($NS, "meta") }
         {
           element { fn:QName($NS, "type") }           { $spreadSheetType },
+          element { fn:QName($NS, "client") }         { $client },
           element { fn:QName($NS, "templateId") }     { $templateId },
           element { fn:QName($NS, "workPaperId") }    { $workPaperId },
-          element { fn:QName($NS, "user") }           { $userFullName },
+          element { fn:QName($NS, "userFullName") }   { $userFullName },
+          element { fn:QName($NS, "user") }           { $user },
           element { fn:QName($NS, "version") }        { $version },
           element { fn:QName($NS, "fileName") }       { $metaDoc/tax:fileName/text() },
           element { fn:QName($NS, "creator") }        { map:get($table, "docProps/core.xml")/core:coreProperties/dc:creator/text() },
@@ -1261,8 +1263,31 @@ declare function ingest:extractSpreadsheetData(
         }
       }
 
-  let $workBookMapDocStatus := xdmp:document-insert($metaDoc/tax:metaFileUri/text()||"-map.xml", $wkBookMapDoc, xdmp:default-permissions(), ("spreadsheet"))
+  let $workBookMapDocStatus := xdmp:document-insert($metaDoc/tax:metaFileUri/text()||"-map.xml", $wkBookMapDoc, xdmp:default-permissions(), ("workbook"))
 
+  let $workSheetDocs := ingest:spawnWorkSheetIngest($wkSheetList, $userFullName, $user, $version, $workPaperId, $metaDoc, $wkBook, $rels, $table)
+
+  return
+  (
+    xdmp:elapsed-time(),
+    fn:count($workSheetDocs)
+  )
+};
+
+(:~
+ :)
+declare function ingest:spawnWorkSheetIngest(
+  $wkSheetList,
+  $userFullName as xs:string,
+  $user as xs:string,
+  $version as xs:string,
+  $workPaperId as xs:string,
+  $metaDoc,
+  $wkBook,
+  $rels,
+  $table as map:map
+)
+{
   let $workSheetDocs :=
       for $ws in $wkSheetList
         let $sheetCycle := xs:string($ws/@name)
@@ -1274,7 +1299,26 @@ declare function ingest:extractSpreadsheetData(
           order by $relId
 
         return
-        (
+          xdmp:spawn(
+            "/app/lib/workSheetIngest.xqy",
+            (
+              (xs:QName("metaUri"),        $metaUri),
+              (xs:QName("wkSheet"),        $wkSheetList[@name=$sheetCycle]),
+              (xs:QName("wkSheetType"),    "wsheet"),
+              (xs:QName("client"),         $metaDoc/tax:client/text()),
+              (xs:QName("userFullName"),   $userFullName),
+              (xs:QName("user"),           $user),
+              (xs:QName("version"),        $version),
+              (xs:QName("workPaperId"),    $workPaperId),
+              (xs:QName("binFileUri"),     $metaDoc/tax:binFileUri/text()),
+              (xs:QName("origTemplateId"), ""),
+              (xs:QName("wkBook"),         $wkBook),
+              (xs:QName("rels"),           $rels),
+              (xs:QName("table"),          $table)
+            )
+          )
+          
+        (:
           xdmp:document-insert(
             $metaUri,
             ingest:createWorkSheetMetadoc(
@@ -1295,138 +1339,10 @@ declare function ingest:extractSpreadsheetData(
             ("worksheet")
           ),
           $metaUri
-       )
+       :)
 
   return
-  (
-    xdmp:elapsed-time(),
-    fn:count($workSheetDocs)
-  )
-};
-
-(:~
- : Extract Spreadsheet Data
- :
- : @param $zipfile
- :)
-declare function ingest:extractSpreadsheetData-Older(
-  $spreadSheetType as xs:string,
-  $client as xs:string,
-  $userFullName as xs:string,
-  $user as xs:string,
-  $version as xs:string,
-  $workPaperId as xs:string,
-  $fileUri as xs:string,
-  $origTemplateId as xs:string,
-  $binFile as node()*)
-{
-  (: 2 types: wpaper or template :)
-
-  let $exclude :=
-  (
-    "[Content_Types].xml", "docProps/app.xml", "xl/theme/theme1.xml", "xl/styles.xml", "_rels/.rels",
-    "xl/vbaProject.bin", "xl/media/image1.png"
-  )
-
-  let $fileName := fn:tokenize($fileUri, "/")[fn:last()-1]
-
-  let $table := map:map()
-  
-  let $docs :=
-    for $x in xdmp:zip-manifest($binFile)//zip:part/text()
-      where (($x = $exclude) eq fn:false()) and fn:not(fn:starts-with($x, "xl/printerSettings/printerSettings"))
-        return
-          map:put($table, $x, xdmp:zip-get($binFile, $x, $OPTIONS))
-
-  let $wkBook        := map:get($table, "xl/workbook.xml")/ssml:workbook
-
-  let $nameRefs      :=
-    for $item in $wkBook/ssml:definedNames/node()
-      where fn:not(fn:starts-with($item/text(), "#REF!"))
-        return $item
-
-  let $wkSheetList   := $wkBook/ssml:sheets/ssml:sheet
-  let $rels          := map:get($table, "xl/_rels/workbook.xml.rels")/rel:Relationships
-  let $sharedStrings := map:get($table, "xl/sharedStrings.xml")/ssml:sst/ssml:si/ssml:t/text()
-
-  let $workSheets :=
-    element { fn:QName($NS, "worksheets") }
-    {
-      for $ws in $wkSheetList
-        let $wkSheetKey := "xl/"||xs:string($rels/rel:Relationship[@Id=$ws/@wbrel:id/fn:string()]/@Target)
-        let $relWkSheet := map:get($table, $wkSheetKey)
-        let $dim := $relWkSheet/ssml:worksheet/ssml:dimension/@ref/fn:string()
-        where fn:empty($ws/@state)
-          return
-            ingest:createWorkSheetMetadoc(
-              "wpaper",
-              $client,
-              $userFullName,
-              $user,
-              $version,
-              $workPaperId,
-              $fileUri,
-              $origTemplateId,
-              $wkBook,
-              $ws,
-              $rels,
-              $table
-            )
-    }
-
-  let $newNameRefDoc := ingest:getNameRangeDoc($nameRefs, $table)
-  
-  let $templateId :=
-    if (fn:string-length($origTemplateId) gt 0) then
-      $origTemplateId
-    else
-      xdmp:hash64($workSheets)
-
-  (: GR001: fix to do this by worksheet :)
-  let $state                        := ingest:getNameRefInfo($nameRefs[@name="State"][1], $table)/tax:rnValue/text()
-  let $country                      := ingest:getNameRefInfo($nameRefs[@name="Country"][1], $table)/tax:rnValue/text()
-  let $filingEntity                 := ingest:getNameRefInfo($nameRefs[@name="FilingEntity"][1], $table)/tax:rnValue/text()
-  let $fiscalYear                   := ingest:getNameRefInfo($nameRefs[@name="FiscalYear"][1], $table)/tax:rnValue/text()
-  
-  let $averageVariance              := fn:abs(fn:round(ingest:getNameRefInfo($nameRefs[@name="AverageProvisionVariance"][1], $table)/tax:rnValue/text() * 100))
-  let $preTaxBookIncomeVariance     := fn:abs(fn:round(ingest:getNameRefInfo($nameRefs[@name="PreTaxBookIncomeVariance"][1], $table)/tax:rnValue/text() * 100))
-  let $returnBasisProvisionVariance := fn:abs(fn:round(ingest:getNameRefInfo($nameRefs[@name="ReturnBasisProvisionVariance"][1], $table)/tax:rnValue/text() * 100))
-  let $taxableIncomeVariance        := fn:abs(fn:round(ingest:getNameRefInfo($nameRefs[@name="TaxableIncomeVariance"][1], $table)/tax:rnValue/text() * 100))
-
-  let $doc :=
-    element { fn:QName($NS, "workbook") }
-    {
-      element { fn:QName($NS, "meta") }
-      {
-        element { fn:QName($NS, "type") }                         { $spreadSheetType },
-        element { fn:QName($NS, "client") }                       { $client },
-        element { fn:QName($NS, "state") }                        { $state },
-        element { fn:QName($NS, "country") }                      { $country },
-        element { fn:QName($NS, "filingEntity") }                 { $filingEntity },
-        element { fn:QName($NS, "fiscalYear") }                   { $fiscalYear },
-        element { fn:QName($NS, "averageVariance") }              { $averageVariance },
-        element { fn:QName($NS, "preTaxBookIncomeVariance") }     { $preTaxBookIncomeVariance },
-        element { fn:QName($NS, "returnBasisProvisionVariance") } { $returnBasisProvisionVariance },
-        element { fn:QName($NS, "taxableIncomeVariance") }        { $taxableIncomeVariance },
-        element { fn:QName($NS, "templateId") }                   { $templateId },
-        element { fn:QName($NS, "workPaperId") }                  { $workPaperId },
-        element { fn:QName($NS, "user") }                         { $userFullName },
-        element { fn:QName($NS, "version") }                      { $version },
-        element { fn:QName($NS, "fileName") }                     { $fileName },
-        element { fn:QName($NS, "creator") }        { map:get($table, "docProps/core.xml")/core:coreProperties/dc:creator/text() },
-        element { fn:QName($NS, "file") }           { $fileUri },
-        element { fn:QName($NS, "lastModifiedBy") } { map:get($table, "docProps/core.xml")/core:coreProperties/core:lastModifiedBy/text() },
-        element { fn:QName($NS, "created") }        { map:get($table, "docProps/core.xml")/core:coreProperties/dcterms:created/text() },
-        element { fn:QName($NS, "modified") }       { map:get($table, "docProps/core.xml")/core:coreProperties/dcterms:modified/text() }
-      },
-      element { fn:QName($NS, "feed") }
-      {
-        $newNameRefDoc,
-        $workSheets
-      }
-    }
-
-  return $doc
+    $workSheetDocs
 };
 
 (:~

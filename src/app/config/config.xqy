@@ -251,7 +251,7 @@ declare variable $c:SEARCH-OPTIONS :=
     <term>
       <term-option>case-insensitive</term-option>
     </term>
-    <additional-query>{cts:collection-query(("spreadsheet", "worksheet"))}</additional-query>
+    <additional-query>{cts:collection-query(("spreadsheet", "worksheet", "workbook"))}</additional-query>
     <grammar>
       <quotation>"</quotation>
       <implicit>
