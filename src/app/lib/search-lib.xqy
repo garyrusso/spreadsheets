@@ -27,7 +27,7 @@ declare function slib:createUserDataDoc($client as xs:string, $user as xs:string
 {
   let $dnames      := () (: json:transform-from-json($jDnames) :)
 
-  let $templateUri := slib:getTemplateUriByTemplateId($client, $templateId)/metadataUri/text()
+  let $templateUri := slib:getTemplateByTemplateId($client, $templateId)/metadataUri/text()
 
   let $fullName         := ingest:getUserFullName()
   let $userFullName     := $fullName/firstName/text()||" "||$fullName/lastName/text()
@@ -75,7 +75,7 @@ declare function slib:createUserDataDoc($client as xs:string, $user as xs:string
 
 (:
  :)
-declare function slib:getTemplateUriByTemplateId($client as xs:string, $templateId as xs:string)
+declare function slib:getTemplateByTemplateId($client as xs:string, $templateId as xs:string)
 {
   let $query := cts:and-query((
                   cts:collection-query(("spreadsheet")),
@@ -182,20 +182,30 @@ declare function slib:formatSearchResults($response)
 declare function slib:formatListResults($results as document-node()*)
 {
   let $doc :=
-    element { "list" }
+    element { "results" }
     {
-      element { "count" } { fn:count($results/tax:worksheet) },
+      element { "count" } { fn:count($results/tax:workbook) },
       for $result in $results
         return
           element { "result" }
           {
-            element { "templateId" }          { $result/tax:worksheet/tax:meta/tax:templateId/text() },
-            element { "workPaperId" }         { $result/tax:worksheet/tax:meta/tax:workPaperId/text() },
-            element { "templateUri" }         { $result/tax:worksheet/tax:meta/tax:file/text() },
-            element { "templateMetadataUri" } { xdmp:node-uri($result) },
-            element { "client" }              { $result/tax:worksheet/tax:meta/tax:client/text() },
-            element { "user" }                { $result/tax:worksheet/tax:meta/tax:user/text() },
-            element { "version" }             { $result/tax:worksheet/tax:meta/tax:version/text() }
+            element { "templateId" }    { $result/tax:workbook/tax:meta/tax:templateId/text() },
+            element { "workPaperId" }   { $result/tax:workbook/tax:meta/tax:workPaperId/text() },
+            element { "client" }        { $result/tax:workbook/tax:meta/tax:client/text() },
+            element { "userFullName" }  { $result/tax:workbook/tax:meta/tax:userFullName/text() },
+            element { "user" }          { $result/tax:workbook/tax:meta/tax:user/text() },
+            element { "fileName" }      { $result/tax:workbook/tax:meta/tax:fileName/text() },
+            element { "version" }       { $result/tax:workbook/tax:meta/tax:version/text() },
+            element { "binFileUri" }    { $result/tax:workbook/tax:meta/tax:file/text() },
+            element { "metadataUri" }   { xdmp:node-uri($result) },
+            element { "workSheetUris" } {
+              for $uri in $result/tax:workbook/tax:workBookMap/tax:workSheet
+                return
+                  element { "workSheet" } {
+                    element { "name" } { $uri/tax:name/text() },
+                    element { "uri" } { $uri/tax:uri/text() }
+                  }
+            }
           }
     }
 
@@ -243,7 +253,7 @@ declare function slib:getTemplateListByClient($client as xs:string)
  :)
 declare function slib:getWorkpaperListByClient($client as xs:string)
 {
-  let $results := slib:getSpreadsheetListByClient($client, "wsheet")
+  let $results := slib:getSpreadsheetListByClient($client, "wpaper")
   
   return slib:formatListResults($results)
 };
@@ -253,7 +263,7 @@ declare function slib:getWorkpaperListByClient($client as xs:string)
 declare function slib:getSpreadsheetListByClient($client as xs:string, $type)
 {
   let $query := cts:and-query((
-                  cts:collection-query(("worksheet")),
+                  cts:collection-query(("workbook")),
                   cts:element-value-query(fn:QName($NS, "type"), $type),
                   cts:element-value-query(fn:QName($NS, "client"), $client)
                 ))
@@ -261,20 +271,6 @@ declare function slib:getSpreadsheetListByClient($client as xs:string, $type)
   let $results := cts:search(fn:doc(), $query)
 
   return $results
-};
-
-declare function slib:getWorkpaperListByClientByQstring1($client as xs:string, $q as xs:string)
-{
-  let $query := cts:and-query((
-                  cts:collection-query(("spreadsheet")),
-                  cts:element-value-query(fn:QName($NS, "type"), "wpaper"),
-                  cts:element-value-query(fn:QName($NS, "client"), $client),
-                  cts:word-query($q)
-                ))
-                
-  let $results := cts:search(fn:doc(), $query)
-  
-  return slib:formatListResults($results)
 };
 
 declare function slib:getWorkpaperListByClientByQstring($client as xs:string, $q as xs:string, $start as xs:unsignedLong?, $pageLength as xs:unsignedLong?)
@@ -286,19 +282,4 @@ declare function slib:getWorkpaperListByClientByQstring($client as xs:string, $q
   return
     slib:formatSearchResults($response)
 };
-
-(:
-declare function slib:searchTemplates($q as xs:string, $client as xs:string)
-{
-  let $query := cts:and-query((
-                  cts:collection-query(("spreadsheet")),
-                  cts:element-value-query(fn:QName($NS, "client"), $client),
-                  cts:word-query($q)
-                ))
-                
-  let $results := cts:search(fn:doc(), $query)
-  
-  return slib:formatListResults($results)
-};
- :)
 

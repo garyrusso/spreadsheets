@@ -65,21 +65,27 @@ function get(context, params) {
   }
 
   if (fn.stringLength(qString) > 0) {
-  
+
+  xdmp.log("1............ GET wpaper request - client: " + client + " --- qString: " + qString);
+
     retObj = getWorkpaperListByClientByQstring(client, qString);
 
   } else if (fn.stringLength(id) > 0) {
   
-    retObj = getWorkpaperUriByTemplateId(client, id);
+  xdmp.log("2............ GET wpaper request - client: " + client + " --- id: " + id);
+  
+    retObj = getWorkpaperByTemplateId(client, id);
 
   } else if (fn.stringLength(workPaperId) > 0) {
 
-  xdmp.log("1............ GET wpaper request - client: " + client + " --- workPaperId: " + workPaperId);
+  xdmp.log("3............ GET wpaper request - client: " + client + " --- workPaperId: " + workPaperId);
 
     retObj = getWorkpaperByWorkpaperId(client, workPaperId);
 
   } else {
 
+  xdmp.log("4............ GET wpaper request - client: " + client);
+  
     retObj = getWorkpaperListByClient(client);
   
   }
@@ -533,7 +539,7 @@ function deleteFunction(context, params) {
   } else if (fn.stringLength(fileId) > 0) {
 
       // get file Uri using fileId
-      fileUrl = getWorkpaperUriByTemplateId(client, fileId).metadataUri;
+      fileUrl = getWorkpaperByTemplateId(client, fileId).metadataUri;
 
       newFileId = "";
 
@@ -753,11 +759,11 @@ function getUserInfo()
   return retObj;
 };
 
-function getWorkpaperUriByTemplateId(client, templateId)
+function getWorkpaperByTemplateId(client, templateId)
 {
   var doc, retObj;
 
-  doc = slib.getWorkpaperUriByTemplateId(client, templateId);
+  doc = slib.getWorkpaperByTemplateId(client, templateId);
 
   retObj =
     {
@@ -776,10 +782,10 @@ function getWorkpaperUriByTemplateId(client, templateId)
 function getWorkpaperByWorkpaperId(client, workPaperId)
 {
   var doc, retObj;
-  var sheetUriList, jSheetUriList;
   var count = 0;
 
-  var sheetUris = [];
+  var sheetNameList, jSheetNameList;
+  var sheetUriList, jSheetUriList;
 
   doc = slib.getWorkpaperByWorkpaperId(client, workPaperId);
 
@@ -789,28 +795,21 @@ function getWorkpaperByWorkpaperId(client, workPaperId)
   sheetUriList   = doc.xpath("/workSheetUris/workSheet/uri/text()").valueOf();
   jSheetUriList  = xdmp.toJSON(sheetUriList);
 
-  // GR001: fix this kludge to get count
-  count = fn.count(fn.tokenize(xdmp.toJsonString(jSheetUriList), '", "'));
+  workSheetList    = resultDoc.xpath("/result/workSheetUris");
 
-  if (count === 1) {
-      var obj = {
-          name: jSheetNameList,
-          uri: jSheetUriList
-      };
-      
-      sheetUris.push(obj);
+  var workSheetArray = workSheetList.toArray()
+
+  var workSheetResultArray = [];
+  
+  for (i = 0; i < workSheetArray.length; i++)
+  {
+    var retObj = {
+      id: workSheetArray[i].xpath("./workSheet/name/text()"),
+      uri: workSheetArray[i].xpath("./workSheet/uri/text()")
+    };
+    
+    workSheetResultArray.push(retObj);
   }
-  else {
-    for (i = 0; i < count; i++)
-    {
-      var obj = {
-          name: jSheetNameList.root[i],
-          uri: jSheetUriList.root[i]
-      };
-      
-      sheetUris.push(obj);
-    }
-  };
 
   retObj =
     {
@@ -823,10 +822,27 @@ function getWorkpaperByWorkpaperId(client, workPaperId)
       version:       doc.xpath("/version/text()"),
       fileUri:       doc.xpath("/binFileUri/text()"),
       metadataUri:   doc.xpath("/metadataUri/text()"),
-      workSheetUris: sheetUris
+      workSheetUris: getWorkSheetList(workSheetResultArray)
     };
     
   return retObj;
+};
+
+function getWorkSheetList(workSheetResultArray)
+{
+  var sheetUris = [];
+
+  for (i = 0; i < workSheetResultArray.length; i++)
+  {
+    var obj = {
+        name: workSheetResultArray[i].id,
+        uri:  workSheetResultArray[i].uri
+    };
+    
+    sheetUris.push(obj);
+  };
+  
+  return sheetUris;
 };
 
 function getWorkpaperListByClient(client)
@@ -838,7 +854,7 @@ function getWorkpaperListByClient(client)
   var retObj = {
     count: count,
     client: client,
-    results: formatResults(doc)
+    results: formatListResults(doc)
   };
 
   return retObj;
@@ -1031,6 +1047,198 @@ function formatResults(doc)
   }
 
   return resultsDoc;
+};
+
+function formatListResults(doc)
+{
+  var count, result, resultDoc;
+
+  var idList, jIdList;
+  var userList, jUserList;
+  var userFullNameList, jUserFullNameList;
+  var clientList, jClientList;
+  var versionList, jVersionList;
+  var uriList, jUriList;
+  var metaUriList, jMetaUriList;
+  var workPaperIdList, jWorkPaperIdList;
+  var fileUriList, jFileUriList;
+  var fileNameList, jFileNameList;
+
+  var sheetNameList, jSheetNameList;
+  var sheetUriList, jSheetUriList;
+
+  count  = doc.xpath("/count/text()");
+  result = doc.xpath("/result");
+
+  var resultObjList = [];
+  var retObj;
+
+  if (count > 0) {
+  
+    if (count === 1) {
+
+      resultDoc = result.next().value.valueOf();
+
+      idList    = resultDoc.xpath("/result/templateId/text()");
+      jIdList   = xdmp.toJSON(idList);
+
+      userList  = resultDoc.xpath("/result/user/text()");
+      jUserList = xdmp.toJSON(userList);
+
+      userFullNameList  = resultDoc.xpath("/result/userFullName/text()");
+      jUserFullNameList = xdmp.toJSON(userFullNameList);
+
+      clientList  = resultDoc.xpath("/result/client/text()");
+      jClientList = xdmp.toJSON(clientList);
+
+      versionList  = resultDoc.xpath("/result/version/text()");
+      jVersionList = xdmp.toJSON(versionList);
+
+      fileNameList  = resultDoc.xpath("/result/fileName/text()");
+      jFileNameList = xdmp.toJSON(fileNameList);
+      
+      fileUriList  = resultDoc.xpath("/result/binFileUri/text()");
+      jFileUriList = xdmp.toJSON(fileUriList);
+
+      uriList   = resultDoc.xpath("/result/templateUri/text()");
+      jUriList  = xdmp.toJSON(uriList);
+      
+      metaUriList  = resultDoc.xpath("/result/templateMetadataUri/text()");
+      jMetaUriList = xdmp.toJSON(metaUriList);
+    
+      workPaperIdList  = resultDoc.xpath("/result/workPaperId/text()");
+      jWorkPaperIdList = xdmp.toJSON(workPaperIdList);
+
+      sheetNameList  = doc.xpath("/result/workSheetUris/workSheet/name/text()").valueOf();
+      jSheetNameList = xdmp.toJSON(sheetNameList);
+      
+      sheetUriList   = doc.xpath("/result/workSheetUris/workSheet/uri/text()").valueOf();
+      jSheetUriList  = xdmp.toJSON(sheetUriList);
+
+      workSheetList    = resultDoc.xpath("/result/workSheetUris");
+
+      var workSheetArray = workSheetList.toArray()
+      
+      var workSheetResultArray = [];
+      
+      for (i = 0; i < workSheetArray.length; i++)
+      {
+        var retObj = {
+          id: workSheetArray[i].xpath("./workSheet/name/text()"),
+          uri: workSheetArray[i].xpath("./workSheet/uri/text()")
+        };
+        
+        workSheetResultArray.push(retObj);
+      }
+
+      retObj =
+        {
+          id:            jIdList,
+          workPaperId:   jWorkPaperIdList,
+          client:        jClientList,
+          userFullName:  jUserFullNameList,
+          user:          jUserList,
+          fileName:      jFileNameList,
+          version:       jVersionList,
+          fileUri:       jFileUriList,
+          metadataUri:   jMetaUriList,
+          workSheetUris: getWorkSheetList(workSheetResultArray)
+        };
+        
+      resultObjList.push(retObj);
+      
+    } else {
+    
+      resultDoc = result.next().value;
+      
+      idList    = resultDoc.xpath("/result/templateId/text()").valueOf();
+      jIdList   = xdmp.toJSON(idList);
+      
+      userList  = resultDoc.xpath("/result/user/text()").valueOf();
+      jUserList = xdmp.toJSON(userList);
+
+      userFullNameList  = resultDoc.xpath("/result/userFullName/text()").valueOf();
+      jUserFullNameList = xdmp.toJSON(userFullNameList);
+
+      clientList  = resultDoc.xpath("/result/client/text()").valueOf();
+      jClientList = xdmp.toJSON(clientList);
+
+      versionList  = resultDoc.xpath("/result/version/text()").valueOf();
+      jVersionList = xdmp.toJSON(versionList);
+
+      fileNameList  = resultDoc.xpath("/result/fileName/text()").valueOf();
+      jFileNameList = xdmp.toJSON(fileNameList);
+
+      fileUriList  = resultDoc.xpath("/result/binFileUri/text()").valueOf();
+      jFileUriList = xdmp.toJSON(fileUriList);
+
+      uriList   = resultDoc.xpath("/result/templateUri/text()").valueOf();
+      jUriList  = xdmp.toJSON(uriList);
+      
+      metaUriList = resultDoc.xpath("/result/templateMetadataUri/text()").valueOf();
+      jMetaUriList = xdmp.toJSON(metaUriList);
+    
+      workPaperIdList  = resultDoc.xpath("/result/workPaperId/text()").valueOf();
+      jWorkPaperIdList = xdmp.toJSON(workPaperIdList);
+      
+      workSheetList    = resultDoc.xpath("/result/workSheetUris");
+      var workSheetArray = workSheetList.toArray()
+
+      var workSheetResultArray = [];
+      
+      for (i = 0; i < workSheetArray.length; i++)
+      {
+        var retObj = {
+          id: workSheetArray[i].xpath("./workSheet/name/text()"),
+          uri: workSheetArray[i].xpath("./workSheet/uri/text()")
+        };
+        
+        workSheetResultArray.push(retObj);
+      }
+
+      var sheetListDoc = [];
+      
+      sheetListDoc = getWorkSheetList(workSheetResultArray)
+
+      for (i = 0; i < count; i++)
+      {
+
+        var sheetObjList = [];
+        
+        var nameArray = sheetListDoc[i].name.toArray();
+        var uriArray = sheetListDoc[i].uri.toArray();
+        
+        for (j = 0; j < nameArray.length; j++) {
+          
+          var sheetObj = {
+            name: nameArray[j],
+            uri:  uriArray[j]
+          }
+          
+          sheetObjList.push(sheetObj);
+        };
+
+        var retObj = {
+          id:             jIdList.root[i],
+          workPaperId:    jWorkPaperIdList.root[i],
+          client:         jClientList.root[i],
+          userFullName:   jUserFullNameList.root[i],
+          user:           jUserList.root[i],
+          fileName:       jFileNameList.root[i],
+          version:        jVersionList.root[i],
+          fileUri:        jFileUriList.root[i],
+          metadataUri:    jMetaUriList.root[i],
+          workSheetCount: sheetObjList.length,
+          workSheets:     sheetObjList
+        };
+        
+        resultObjList.push(retObj);
+        
+      }
+    }
+  }
+
+  return resultObjList;
 };
 
 function getUserIdFromUserFullName(fullName)
