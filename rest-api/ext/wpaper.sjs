@@ -21,7 +21,7 @@ function get(context, params) {
   // using an array of the form [statusCode, statusMessage].
   // Do NOT use this to return an error response.
   
-  xdmp.addResponseHeader("Content-Disposition", 'attachment; filename="workpaper.xlsx"');
+//  xdmp.addResponseHeader("Content-Disposition", 'attachment; filename="workpaper.xlsx"');
   context.outputStatus = [200, 'OK'];
 
   var fileName, uri, qString, id, doc, retObj, workPaperId, client;
@@ -795,7 +795,7 @@ function getWorkpaperByWorkpaperId(client, workPaperId)
   sheetUriList   = doc.xpath("/workSheetUris/workSheet/uri/text()").valueOf();
   jSheetUriList  = xdmp.toJSON(sheetUriList);
 
-  workSheetList    = resultDoc.xpath("/result/workSheetUris");
+  workSheetList  = doc.xpath("/result/workSheetUris");
 
   var workSheetArray = workSheetList.toArray()
 
@@ -873,79 +873,10 @@ function getWorkpaperListByClientByQstring(client, qString)
     count: count,
     client: client,
     search: qString,
-    results: formatSearchResults(doc)
+    results: formatListResults(doc)
   };
 
   return retObj;
-};
-
-function formatSearchResults(doc)
-{
-  var count, workPapers, workPapersDoc;
-
-  var clientList, jClientList;
-  var idList, jIdList;
-  var userList, jUserList;
-  var uriList, jUriList;
-  var metaUriList, jMetaUriList;
-  var workPaperIdList, jWorkPaperIdList;
-
-  count = doc.xpath("/count/text()");
-  workPapers = doc.xpath("/workPaper");
-
-  var resultsDoc = [];
-
-  if (count > 0) {
-  
-    if (count === 1) {
-
-      workPapersDoc = workPapers.next().value.valueOf();
-
-      workPaperIdList  = workPapersDoc.xpath("/workPaper/workPaperId/text()");
-      jWorkPaperIdList = xdmp.toJSON(workPaperIdList);
-
-      userList  = workPapersDoc.xpath("/workPaper/user/text()");
-      jUserList = xdmp.toJSON(userList);
-
-      uriList   = workPapersDoc.xpath("/workPaper/uri/text()");
-      jUriList  = xdmp.toJSON(uriList);
-      
-      var obj = {
-          workPaperId: jWorkPaperIdList,
-          user: jUserList,
-          fileUri: jUriList
-      };
-
-      resultsDoc.push(obj);
-      
-    } else {
-    
-      workPapersDoc = workPapers.next().value;
-      
-      userList  = workPapersDoc.xpath("/workPaper/user/text()").valueOf();
-      jUserList = xdmp.toJSON(userList);
-      
-      uriList   = workPapersDoc.xpath("/workPaper/uri/text()").valueOf();
-      jUriList  = xdmp.toJSON(uriList);
-      
-      workPaperIdList = workPapersDoc.xpath("/workPaper/workPaperId/text()").valueOf();
-      jWorkPaperIdList = xdmp.toJSON(workPaperIdList);
-      
-      for (i = 0; i < count; i++)
-      {
-        var obj = {
-            workPaperId: jWorkPaperIdList.root[i],
-            user: jUserList.root[i],
-            fileUri: jUriList.root[i]
-        };
-        
-        resultsDoc.push(obj);
-        
-      }
-    }
-  }
-
-  return resultsDoc;
 };
 
 function formatResults(doc)
@@ -956,6 +887,7 @@ function formatResults(doc)
   var idList, jIdList;
   var userList, jUserList;
   var uriList, jUriList;
+  var typeList, jTypeList;
   var metaUriList, jMetaUriList;
   var workPaperIdList, jWorkPaperIdList;
 
@@ -982,6 +914,9 @@ function formatResults(doc)
       versionList  = templatesDoc.xpath("/result/version/text()");
       jVersionList = xdmp.toJSON(versionList);
 
+      typeList  = templatesDoc.xpath("/result/type/text()");
+      jTypeList = xdmp.toJSON(typeList);
+
       uriList   = templatesDoc.xpath("/result/templateUri/text()");
       jUriList  = xdmp.toJSON(uriList);
       
@@ -996,6 +931,7 @@ function formatResults(doc)
           client: jClientList,
           workPaperId: jWorkPaperIdList,
           user: jUserList,
+          type: jTypeList,
           version: jVersionList,
           fileUri: jUriList,
           metadataUri: jMetaUriList
@@ -1021,7 +957,10 @@ function formatResults(doc)
 
       uriList   = templatesDoc.xpath("/result/templateUri/text()").valueOf();
       jUriList  = xdmp.toJSON(uriList);
-      
+
+      typeList   = templatesDoc.xpath("/result/type/text()").valueOf();
+      jTypeList  = xdmp.toJSON(typeList);
+
       metaUriList = templatesDoc.xpath("/result/templateMetadataUri/text()").valueOf();
       jMetaUriList = xdmp.toJSON(metaUriList);
     
@@ -1035,6 +974,7 @@ function formatResults(doc)
             client: jClientList.root[i],
             workPaperId: jWorkPaperIdList.root[i],
             user: jUserList.root[i],
+            type: jTypeList.root[i],
             version: jVersionList.root[i],
             fileUri: jUriList.root[i],
             metadataUri: jMetaUriList.root[i]
@@ -1056,6 +996,7 @@ function formatListResults(doc)
   var idList, jIdList;
   var userList, jUserList;
   var userFullNameList, jUserFullNameList;
+  var typeList, jTypeList;
   var clientList, jClientList;
   var versionList, jVersionList;
   var uriList, jUriList;
@@ -1063,9 +1004,6 @@ function formatListResults(doc)
   var workPaperIdList, jWorkPaperIdList;
   var fileUriList, jFileUriList;
   var fileNameList, jFileNameList;
-
-  var sheetNameList, jSheetNameList;
-  var sheetUriList, jSheetUriList;
 
   count  = doc.xpath("/count/text()");
   result = doc.xpath("/result");
@@ -1075,7 +1013,7 @@ function formatListResults(doc)
 
   if (count > 0) {
   
-    if (count === 1) {
+    if (count == 1) {
 
       resultDoc = result.next().value.valueOf();
 
@@ -1087,6 +1025,9 @@ function formatListResults(doc)
 
       userFullNameList  = resultDoc.xpath("/result/userFullName/text()");
       jUserFullNameList = xdmp.toJSON(userFullNameList);
+
+      typeList   = resultDoc.xpath("/result/type/text()");
+      jTypeList  = xdmp.toJSON(typeList);
 
       clientList  = resultDoc.xpath("/result/client/text()");
       jClientList = xdmp.toJSON(clientList);
@@ -1100,20 +1041,11 @@ function formatListResults(doc)
       fileUriList  = resultDoc.xpath("/result/binFileUri/text()");
       jFileUriList = xdmp.toJSON(fileUriList);
 
-      uriList   = resultDoc.xpath("/result/templateUri/text()");
+      uriList   = resultDoc.xpath("/result/metadataUri/text()");
       jUriList  = xdmp.toJSON(uriList);
       
-      metaUriList  = resultDoc.xpath("/result/templateMetadataUri/text()");
-      jMetaUriList = xdmp.toJSON(metaUriList);
-    
       workPaperIdList  = resultDoc.xpath("/result/workPaperId/text()");
       jWorkPaperIdList = xdmp.toJSON(workPaperIdList);
-
-      sheetNameList  = doc.xpath("/result/workSheetUris/workSheet/name/text()").valueOf();
-      jSheetNameList = xdmp.toJSON(sheetNameList);
-      
-      sheetUriList   = doc.xpath("/result/workSheetUris/workSheet/uri/text()").valueOf();
-      jSheetUriList  = xdmp.toJSON(sheetUriList);
 
       workSheetList    = resultDoc.xpath("/result/workSheetUris");
 
@@ -1131,20 +1063,40 @@ function formatListResults(doc)
         workSheetResultArray.push(retObj);
       }
 
-      retObj =
-        {
-          id:            jIdList,
-          workPaperId:   jWorkPaperIdList,
-          client:        jClientList,
-          userFullName:  jUserFullNameList,
-          user:          jUserList,
-          fileName:      jFileNameList,
-          version:       jVersionList,
-          fileUri:       jFileUriList,
-          metadataUri:   jMetaUriList,
-          workSheetUris: getWorkSheetList(workSheetResultArray)
-        };
+      var sheetListDoc = [];
+      
+      sheetListDoc = getWorkSheetList(workSheetResultArray)
+
+      var sheetObjList = [];
+      
+      var nameArray = sheetListDoc[0].name.toArray();
+      var uriArray = sheetListDoc[0].uri.toArray();
+
+      for (j = 0; j < nameArray.length; j++) {
         
+        var sheetObj = {
+          name: nameArray[j],
+          uri:  uriArray[j]
+        }
+        
+        sheetObjList.push(sheetObj);
+      };
+
+      var retObj = {
+        id:             jIdList,
+        workPaperId:    jWorkPaperIdList,
+        client:         jClientList,
+        userFullName:   jUserFullNameList,
+        user:           jUserList,
+        type:           jTypeList,
+        fileName:       jFileNameList,
+        version:        jVersionList,
+        fileUri:        jFileUriList,
+        metadataUri:    jMetaUriList,
+        workSheetCount: sheetObjList.length,
+        workSheets:     sheetObjList
+      };
+      
       resultObjList.push(retObj);
       
     } else {
@@ -1153,9 +1105,12 @@ function formatListResults(doc)
       
       idList    = resultDoc.xpath("/result/templateId/text()").valueOf();
       jIdList   = xdmp.toJSON(idList);
-      
+
       userList  = resultDoc.xpath("/result/user/text()").valueOf();
       jUserList = xdmp.toJSON(userList);
+
+      typeList   = resultDoc.xpath("/result/type/text()").valueOf();
+      jTypeList  = xdmp.toJSON(typeList);
 
       userFullNameList  = resultDoc.xpath("/result/userFullName/text()").valueOf();
       jUserFullNameList = xdmp.toJSON(userFullNameList);
@@ -1172,10 +1127,7 @@ function formatListResults(doc)
       fileUriList  = resultDoc.xpath("/result/binFileUri/text()").valueOf();
       jFileUriList = xdmp.toJSON(fileUriList);
 
-      uriList   = resultDoc.xpath("/result/templateUri/text()").valueOf();
-      jUriList  = xdmp.toJSON(uriList);
-      
-      metaUriList = resultDoc.xpath("/result/templateMetadataUri/text()").valueOf();
+      metaUriList = resultDoc.xpath("/result/metadataUri/text()").valueOf();
       jMetaUriList = xdmp.toJSON(metaUriList);
     
       workPaperIdList  = resultDoc.xpath("/result/workPaperId/text()").valueOf();
@@ -1224,6 +1176,7 @@ function formatListResults(doc)
           client:         jClientList.root[i],
           userFullName:   jUserFullNameList.root[i],
           user:           jUserList.root[i],
+          type:           jTypeList.root[i],
           fileName:       jFileNameList.root[i],
           version:        jVersionList.root[i],
           fileUri:        jFileUriList.root[i],

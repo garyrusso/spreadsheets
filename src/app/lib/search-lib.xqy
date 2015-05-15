@@ -160,17 +160,31 @@ declare function slib:formatSearchResults($response)
   let $results := $response/search:result
 
   let $doc :=
-    element { "list" }
+    element { "results" }
     {
       element { "count" } { xs:string($response/@total) },
       for $result in $results
         return
-          element { "workPaper" }
+          element { "result" }
           {
-            element { "workPaperId" } { $result/search:snippet/tax:workPaperId/text() },
-            element { "user" }        { $result/search:snippet/tax:user/text() },
-            element { "type" }        { $result/search:snippet/tax:type/text() },
-            element { "uri" }         { xs:string($result/@uri) }
+            element { "templateId" }   { $result/search:snippet/tax:templateId/text() },
+            element { "workPaperId" }  { $result/search:snippet/tax:workPaperId/text() },
+            element { "type" }         { $result/search:snippet/tax:type/text() },
+            element { "client" }       { $result/search:snippet/tax:client/text() },
+            element { "userFullName" } { $result/search:snippet/tax:userFullName/text() },
+            element { "user" }         { $result/search:snippet/tax:user/text() },
+            element { "fileName" }     { $result/search:snippet/tax:fileName/text() },
+            element { "version" }      { $result/search:snippet/tax:version/text() },
+            element { "binFileUri" }   { $result/search:snippet/tax:file/text() },
+            element { "metadataUri" }  { xs:string($result/@uri) },
+            element { "workSheetUris" } {
+              for $uri in $result/search:snippet/tax:workBookMap/tax:workSheet
+                return
+                  element { "workSheet" } {
+                    element { "name" } { $uri/tax:name/text() },
+                    element { "uri" } { $uri/tax:uri/text() }
+                  }
+            }
           }
     }
 
@@ -277,7 +291,9 @@ declare function slib:getWorkpaperListByClientByQstring($client as xs:string, $q
 {
   let $options := $c:REST-SEARCH-OPTIONS
 
-  let $response := search:search($q, $options, $start, $pageLength)
+  let $qString    := $q||" AND type:wpaper"
+  
+  let $response := search:search($qString, $options, $start, $pageLength)
 
   return
     slib:formatSearchResults($response)

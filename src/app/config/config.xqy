@@ -199,25 +199,36 @@ declare variable $c:REST-SEARCH-OPTIONS :=
     </constraint>
     <transform-results apply="metadata-snippet">
       <preferred-elements>
+        <element ns="http://tax.thomsonreuters.com" name="templateId"/>
+        <element ns="http://tax.thomsonreuters.com" name="workPaperId"/>
         <element ns="http://tax.thomsonreuters.com" name="type"/>
         <element ns="http://tax.thomsonreuters.com" name="user"/>
-        <element ns="http://tax.thomsonreuters.com" name="workPaperId"/>
+        <element ns="http://tax.thomsonreuters.com" name="version"/>
+        <element ns="http://tax.thomsonreuters.com" name="fileName"/>
+        <element ns="http://tax.thomsonreuters.com" name="client"/>
+        <element ns="http://tax.thomsonreuters.com" name="userFullName"/>
+        <element ns="http://tax.thomsonreuters.com" name="file"/>
         <element ns="http://tax.thomsonreuters.com" name="rowLabel"/>
-        <element ns="http://tax.thomsonreuters.com" name="columnLabel"/>
         <element ns="http://tax.thomsonreuters.com" name="rangeName"/>
+        <element ns="http://tax.thomsonreuters.com" name="workBookMap"/>
       </preferred-elements>
     </transform-results>
     <operator name="results">
       <state name="compact">
         <transform-results apply="metadata-snippet">
           <preferred-elements>
-            <element ns="http://tax.thomsonreuters.com" name="type"/>
-            <element ns="http://tax.thomsonreuters.com" name="id"/>
+            <element ns="http://tax.thomsonreuters.com" name="templateId"/>
             <element ns="http://tax.thomsonreuters.com" name="workPaperId"/>
+            <element ns="http://tax.thomsonreuters.com" name="type"/>
             <element ns="http://tax.thomsonreuters.com" name="user"/>
+            <element ns="http://tax.thomsonreuters.com" name="version"/>
+            <element ns="http://tax.thomsonreuters.com" name="fileName"/>
+            <element ns="http://tax.thomsonreuters.com" name="client"/>
+            <element ns="http://tax.thomsonreuters.com" name="userFullName"/>
+            <element ns="http://tax.thomsonreuters.com" name="file"/>
             <element ns="http://tax.thomsonreuters.com" name="rowLabel"/>
-            <element ns="http://tax.thomsonreuters.com" name="columnLabel"/>
             <element ns="http://tax.thomsonreuters.com" name="rangeName"/>
+            <element ns="http://tax.thomsonreuters.com" name="workBookMap"/>
           </preferred-elements>
           <per-match-tokens>30</per-match-tokens>
           <max-matches>4</max-matches>
@@ -227,13 +238,18 @@ declare variable $c:REST-SEARCH-OPTIONS :=
       <state name="detailed">
         <transform-results apply="metadata-snippet">
           <preferred-elements>
-            <element ns="http://tax.thomsonreuters.com" name="type"/>
-            <element ns="http://tax.thomsonreuters.com" name="id"/>
+            <element ns="http://tax.thomsonreuters.com" name="templateId"/>
             <element ns="http://tax.thomsonreuters.com" name="workPaperId"/>
+            <element ns="http://tax.thomsonreuters.com" name="type"/>
             <element ns="http://tax.thomsonreuters.com" name="user"/>
+            <element ns="http://tax.thomsonreuters.com" name="version"/>
+            <element ns="http://tax.thomsonreuters.com" name="fileName"/>
+            <element ns="http://tax.thomsonreuters.com" name="client"/>
+            <element ns="http://tax.thomsonreuters.com" name="userFullName"/>
+            <element ns="http://tax.thomsonreuters.com" name="file"/>
             <element ns="http://tax.thomsonreuters.com" name="rowLabel"/>
-            <element ns="http://tax.thomsonreuters.com" name="columnLabel"/>
             <element ns="http://tax.thomsonreuters.com" name="rangeName"/>
+            <element ns="http://tax.thomsonreuters.com" name="workBookMap"/>
           </preferred-elements>
           <per-match-tokens>30</per-match-tokens>
           <max-matches>4</max-matches>

@@ -1063,7 +1063,8 @@ declare function ingest:createWorkSheetMetadoc(
         element { fn:QName($NS, "taxableIncomeVariance") }        { $taxableIncomeVariance },
         element { fn:QName($NS, "templateId") }                   { $templateId },
         element { fn:QName($NS, "workPaperId") }                  { $workPaperId },
-        element { fn:QName($NS, "user") }                         { $userFullName },
+        element { fn:QName($NS, "user") }                         { $user },
+        element { fn:QName($NS, "userFullName") }                 { $userFullName },
         element { fn:QName($NS, "version") }                      { $version },
         element { fn:QName($NS, "fileName") }                     { $fileName },
         element { fn:QName($NS, "creator") }        { map:get($table, "docProps/core.xml")/core:coreProperties/dc:creator/text() },
@@ -1071,7 +1072,7 @@ declare function ingest:createWorkSheetMetadoc(
         element { fn:QName($NS, "lastModifiedBy") } { map:get($table, "docProps/core.xml")/core:coreProperties/core:lastModifiedBy/text() },
         element { fn:QName($NS, "created") }        { map:get($table, "docProps/core.xml")/core:coreProperties/dcterms:created/text() },
         element { fn:QName($NS, "modified") }       { map:get($table, "docProps/core.xml")/core:coreProperties/dcterms:modified/text() },
-        
+
         element { fn:QName($NS, "workSheetMeta") }
         {
           element { fn:QName($NS, "name") }          { $wkSheet/@name/fn:string() },
